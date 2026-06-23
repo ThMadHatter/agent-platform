@@ -1,0 +1,48 @@
+[project]
+name = "agent-platform"
+version = "0.1.0"
+description = "Production-grade Python monorepo for AI agents"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "sqlalchemy[asyncio]>=2.0.0",
+    "alembic",
+    "pydantic-settings",
+    "pydantic[email]>=2.0.0",
+    "asyncpg",
+    "python-json-logger",
+    "opentelemetry-api",
+    "opentelemetry-sdk",
+    "opentelemetry-instrumentation-fastapi",
+    "opentelemetry-instrumentation-sqlalchemy",
+    "google-generativeai",
+    "python-multipart",
+    "jinja2",
+    "aiohttp",
+    "qdrant-client",
+    "google-api-python-client",
+    "google-auth-httplib2",
+    "google-auth-oauthlib",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest",
+    "pytest-asyncio",
+    "httpx",
+]
+dev = [
+    "black",
+    "isort",
+    "mypy",
+    "pre-commit",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["core*", "agents*", "apps*", "sdk*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
