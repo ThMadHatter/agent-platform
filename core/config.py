@@ -11,6 +11,10 @@ class Settings(BaseSettings):
     # Gemini
     gemini_api_key: str = ""
 
+    # LiteLLM
+    litellm_base_url: str = "http://litellm:4000"
+    litellm_api_key: str = "sk-1234"
+
     # Qdrant
     qdrant_url: str = "http://localhost:6333"
     qdrant_api_key: Optional[str] = None

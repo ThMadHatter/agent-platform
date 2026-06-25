@@ -8,13 +8,10 @@ import os
 from core.config import settings
 from core.telemetry.logging import setup_logging
 from core.telemetry.tracing import setup_tracing
-from core.storage.postgres import PostgreSQLMetadataStore
-from core.storage.gdrive import GoogleDriveDocumentStore
-from core.storage.qdrant import QdrantVectorStore
-from core.execution.runner import AgentRunner
-from core.llm.providers.gemini import GeminiProvider
-from core.llm.prompt_registry import PromptRegistry
+from apps.api.dependencies import runner, metadata_store, document_store, vector_store, llm_provider, prompt_registry
 from agents.medical.agent import MedicalAgent
+from agents.coding.analyzer_agent import RepoAnalyzerAgent
+from core.llm.litellm_client import LiteLLMRouter
 
 # Initialize app
 app = FastAPI(title=settings.app_name)
@@ -23,19 +20,15 @@ setup_tracing()
 
 templates = Jinja2Templates(directory="apps/api/templates")
 
-# Dependencies
-metadata_store = PostgreSQLMetadataStore()
-document_store = GoogleDriveDocumentStore(settings.google_drive_credentials_path)
-vector_store = QdrantVectorStore()
-llm_provider = GeminiProvider(api_key=settings.gemini_api_key)
-prompt_registry = PromptRegistry(["agents/medical/prompts", "core/llm/prompts"])
-
-runner = AgentRunner(metadata_store)
-
 # Agent mapping
 agents = {
-    "medical": MedicalAgent(metadata_store, document_store, vector_store, llm_provider, prompt_registry)
+    "medical": MedicalAgent(metadata_store, document_store, vector_store, llm_provider, prompt_registry),
+    "repo_analyzer": RepoAnalyzerAgent(metadata_store, document_store, vector_store, LiteLLMRouter(), prompt_registry)
 }
+
+# Import and include routers
+from apps.api.routers import n8n_webhook
+app.include_router(n8n_webhook.router)
 
 # API Routes
 @app.post("/api/v1/agents/{agent_name}/execute")
