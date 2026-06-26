@@ -1,5 +1,9 @@
 .PHONY: help install test lint run migrate build up down
 
+VENV=.venv
+PYTHON=$(VENV)/bin/python
+PIP=$(VENV)/bin/pip
+
 help:
 	@echo "Available commands:"
 	@echo "  install   Install dependencies"
@@ -12,21 +16,23 @@ help:
 	@echo "  down      Stop services"
 
 install:
-	pip install -e ".[dev,test]"
+	apt install python3-venv -y
+	python3 -m venv $(VENV)
+	$(PIP) install -e ".[dev,test]"
 
 test:
-	PYTHONPATH=. pytest tests/
+	PYTHONPATH=. $(VENV)/bin/pytest tests/
 
 lint:
-	black .
-	isort .
-	mypy .
+	$(VENV)/bin/black .
+	$(VENV)/bin/isort .
+	$(VENV)/bin/mypy .
 
 run:
-	uvicorn apps.api.main:app --reload
+	$(VENV)/bin/uvicorn apps.api.main:app --reload
 
 migrate:
-	alembic upgrade head
+	$(VENV)/bin/alembic upgrade head
 
 build:
 	docker-compose build
