@@ -19,7 +19,10 @@ if config.config_file_name is not None:
 # add your model's MetaData object here
 # for 'autogenerate' support
 from database.models import Base
+from core.config import settings
 target_metadata = Base.metadata
+
+config.set_main_option("sqlalchemy.url", settings.database_url)
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
@@ -81,8 +84,4 @@ async def run_migrations_online() -> None:
 if context.is_offline_mode():
     run_migrations_offline()
 else:
-    try:
-        asyncio.run(run_migrations_online())
-    except Exception:
-        # Fallback or silent fail if no DB
-        pass
+    asyncio.run(run_migrations_online())

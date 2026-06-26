@@ -55,6 +55,22 @@ async def get_execution(execution_id: str):
 async def health():
     return {"status": "healthy"}
 
+@app.get("/health/db")
+async def health_db():
+    try:
+        from sqlalchemy import text
+        async with metadata_store.async_session() as session:
+            await session.execute(text("SELECT 1"))
+        return {"status": "healthy", "database": "connected"}
+    except Exception as e:
+        return {"status": "unhealthy", "database": str(e)}
+
+@app.get("/health/litellm")
+async def health_litellm():
+    if not settings.litellm_api_key or not settings.litellm_base_url:
+        return {"status": "degraded", "litellm": "config_missing"}
+    return {"status": "healthy", "litellm": "configured"}
+
 # Dashboard Routes
 @app.get("/", response_class=HTMLResponse)
 async def dashboard(request: Request):

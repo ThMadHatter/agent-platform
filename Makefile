@@ -6,33 +6,44 @@ PIP=$(VENV)/bin/pip
 
 help:
 	@echo "Available commands:"
-	@echo "  install   Install dependencies"
-	@echo "  test      Run tests"
-	@echo "  lint      Run linter"
-	@echo "  run       Run the API locally"
-	@echo "  migrate   Run database migrations"
-	@echo "  build     Build Docker images"
-	@echo "  up        Start services with Docker Compose"
-	@echo "  down      Stop services"
+	@echo "  install      Install dependencies and setup venv"
+	@echo "  test         Run tests"
+	@echo "  lint         Run linter"
+	@echo "  run          Run the API locally"
+	@echo "  migrate      Run database migrations"
+	@echo "  migration    Create a new migration (usage: make migration MSG='description')"
+	@echo "  db-current   Show current migration revision"
+	@echo "  db-history   Show migration history"
+	@echo "  build        Build Docker images"
+	@echo "  up           Start services with Docker Compose"
+	@echo "  down         Stop services"
 
 install:
-	apt install python3-venv -y
 	python3 -m venv $(VENV)
 	$(PIP) install -e ".[dev,test]"
 
 test:
-	PYTHONPATH=. $(VENV)/bin/pytest tests/
+	PYTHONPATH=. $(PYTHON) -m pytest tests/
 
 lint:
-	$(VENV)/bin/black .
-	$(VENV)/bin/isort .
-	$(VENV)/bin/mypy .
+	black .
+	isort .
+	mypy .
 
 run:
-	$(VENV)/bin/uvicorn apps.api.main:app --reload
+	PYTHONPATH=. $(VENV)/bin/uvicorn apps.api.main:app --reload
 
 migrate:
-	$(VENV)/bin/alembic upgrade head
+	PYTHONPATH=. $(VENV)/bin/alembic upgrade head
+
+migration:
+	PYTHONPATH=. $(VENV)/bin/alembic revision --autogenerate -m "$(MSG)"
+
+db-current:
+	PYTHONPATH=. $(VENV)/bin/alembic current
+
+db-history:
+	PYTHONPATH=. $(VENV)/bin/alembic history
 
 build:
 	docker-compose build

@@ -59,6 +59,10 @@ The platform utilizes a **Unified LiteLLM Architecture**. Instead of maintaining
 
 ## Documentation
 
+- [Architecture](docs/ARCHITECTURE.md)
+- [Domain Model & Workflow](docs/DOMAIN_MODEL.md)
+- [Database Migrations](docs/MIGRATIONS.md)
+- [Agent Handoff Guide](docs/AGENT_HANDOFF.md)
 - [LiteLLM Integration & Routing Guide](docs/LITELLM_INTEGRATION_AND_ROUTING_GUIDE.md)
-- [Architecture](architecture.md)
 - [Operations Guide](docs/operations.md)
+- [Agent Debugging](docs/HOWTO_DEBUG_AGENTS.md)
