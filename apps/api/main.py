@@ -11,6 +11,7 @@ from core.telemetry.tracing import setup_tracing
 from apps.api.dependencies import runner, metadata_store, document_store, vector_store, llm_provider, prompt_registry
 from agents.medical.agent import MedicalAgent
 from agents.coding.analyzer_agent import RepoAnalyzerAgent
+from agents.simplechat.agent import SimpleChatAgent
 from core.llm.litellm_client import LiteLLMRouter
 
 # Initialize app
@@ -23,7 +24,8 @@ templates = Jinja2Templates(directory="apps/api/templates")
 # Agent mapping
 agents = {
     "medical": MedicalAgent(metadata_store, document_store, vector_store, llm_provider, prompt_registry),
-    "repo_analyzer": RepoAnalyzerAgent(metadata_store, document_store, vector_store, LiteLLMRouter(), prompt_registry)
+    "repo_analyzer": RepoAnalyzerAgent(metadata_store, document_store, vector_store, LiteLLMRouter(), prompt_registry),
+    "simple_chat": SimpleChatAgent(metadata_store, document_store, vector_store, llm_provider, prompt_registry)
 }
 
 # Import and include routers

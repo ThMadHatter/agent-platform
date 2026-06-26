@@ -59,6 +59,7 @@ The platform utilizes a **Unified LiteLLM Architecture**. Instead of maintaining
 
 ## Documentation
 
+- [Simple Start Guide](docs/SIMPLE_START_GUIDE.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Domain Model & Workflow](docs/DOMAIN_MODEL.md)
 - [Database Migrations](docs/MIGRATIONS.md)

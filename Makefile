@@ -3,6 +3,9 @@
 VENV=.venv
 PYTHON=$(VENV)/bin/python
 PIP=$(VENV)/bin/pip
+BLACK=$(VENV)/bin/black
+ISORT=$(VENV)/bin/isort
+MYPY=$(VENV)/bin/mypy
 
 help:
 	@echo "Available commands:"
@@ -26,9 +29,9 @@ test:
 	PYTHONPATH=. $(PYTHON) -m pytest tests/
 
 lint:
-	black .
-	isort .
-	mypy .
+	$(BLACK) .
+	$(ISORT) .
+	$(MYPY) .
 
 run:
 	PYTHONPATH=. $(VENV)/bin/uvicorn apps.api.main:app --reload
