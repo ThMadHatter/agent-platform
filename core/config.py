@@ -8,12 +8,10 @@ class Settings(BaseSettings):
     # Database
     database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/agent_platform"
 
-    # Gemini
-    gemini_api_key: str = ""
-
-    # LiteLLM
-    litellm_base_url: str = "http://litellm:4000"
-    litellm_api_key: str = "sk-1234"
+    # LiteLLM / LLM Gateway
+    litellm_base_url: Optional[str] = None
+    litellm_api_key: Optional[str] = None
+    default_model: str = "openai/gpt-4o"
 
     # Qdrant
     qdrant_url: str = "http://localhost:6333"

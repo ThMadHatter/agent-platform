@@ -8,7 +8,7 @@ async def test_medical_agent_execution_path():
     with patch("core.storage.postgres.create_async_engine"), \
          patch("core.storage.gdrive.GoogleDriveDocumentStore"), \
          patch("core.storage.qdrant.QdrantVectorStore"), \
-         patch("core.llm.providers.gemini.GeminiProvider"), \
+         patch("core.llm.litellm_client.LiteLLMProvider"), \
          patch("core.telemetry.tracing.setup_tracing"), \
          patch("core.telemetry.logging.setup_logging"):
 
