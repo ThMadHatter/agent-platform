@@ -4,7 +4,7 @@ import json
 import logging
 from agents.shared.base import BaseAgent, AgentInput, AgentOutput
 from core.storage.utils import StorageUtils, OCRProvider
-from core.llm.base import LLMProvider
+from core.llm.litellm_client import LiteLLMProvider
 from core.llm.prompt_registry import PromptRegistry
 from core.storage.base import MetadataStore, DocumentStore, VectorStore
 from .pipelines import ExtractionPipeline, NormalizationPipeline
@@ -23,7 +23,7 @@ class MedicalAgent(BaseAgent):
         metadata_store: MetadataStore,
         document_store: DocumentStore,
         vector_store: VectorStore,
-        llm_provider: LLMProvider,
+        llm_provider: LiteLLMProvider,
         prompt_registry: PromptRegistry
     ):
         super().__init__(name="medical")

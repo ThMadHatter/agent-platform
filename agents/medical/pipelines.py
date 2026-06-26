@@ -1,10 +1,10 @@
 from typing import Any, Dict
-from core.llm.base import LLMProvider
+from core.llm.litellm_client import LiteLLMProvider
 from core.llm.prompt_registry import PromptRegistry
 import json
 
 class ExtractionPipeline:
-    def __init__(self, llm_provider: LLMProvider, prompt_registry: PromptRegistry):
+    def __init__(self, llm_provider: LiteLLMProvider, prompt_registry: PromptRegistry):
         self.llm_provider = llm_provider
         self.prompt_registry = prompt_registry
 
@@ -22,7 +22,7 @@ class ExtractionPipeline:
             return {"raw_content": response.content}
 
 class NormalizationPipeline:
-    def __init__(self, llm_provider: LLMProvider, prompt_registry: PromptRegistry):
+    def __init__(self, llm_provider: LiteLLMProvider, prompt_registry: PromptRegistry):
         self.llm_provider = llm_provider
         self.prompt_registry = prompt_registry
 

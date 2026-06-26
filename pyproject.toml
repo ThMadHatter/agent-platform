@@ -16,7 +16,7 @@ dependencies = [
     "opentelemetry-sdk",
     "opentelemetry-instrumentation-fastapi",
     "opentelemetry-instrumentation-sqlalchemy",
-    "google-generativeai",
+    "litellm",
     "python-multipart",
     "jinja2",
     "aiohttp",
