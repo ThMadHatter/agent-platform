@@ -6,7 +6,8 @@ class Settings(BaseSettings):
     environment: str = "development"
 
     # Database
-    database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/agent_platform"
+    # Using 127.0.0.1 instead of localhost to avoid IPv6/DNS issues in some environments
+    database_url: str = "postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/agent_platform"
 
     @property
     def sync_database_url(self) -> str:

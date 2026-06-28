@@ -13,12 +13,22 @@ from agents.simplechat.agent import SimpleChatAgent
 from sqlalchemy import text
 
 async def check_db_connectivity():
+    from core.config import settings
+    from sqlalchemy.engine import make_url
+
+    url = make_url(settings.database_url)
+    print(f"Connecting to database at {url.host}:{url.port or 5432}...")
+
+    if not os.path.exists(".env"):
+        print("Warning: .env file not found. Using default settings.")
+
     try:
         async with metadata_store.async_session() as session:
             await session.execute(text("SELECT 1"))
         return True
     except Exception as e:
         print(f"Error: Could not connect to the database. {e}")
+        print(f"Target URL: {url.render_as_string(hide_password=True)}")
         print("Please check your DATABASE_URL and ensure the database is running.")
         return False
 

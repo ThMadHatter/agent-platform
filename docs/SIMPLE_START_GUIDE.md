@@ -24,6 +24,12 @@ Copy the example environment file and update it with your settings.
 cp .env.example .env
 ```
 
+If you are running the database via Docker but executing the agent script on your host machine, ensure `.env` contains:
+`DATABASE_URL=postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/agent_platform`
+
+If you are running everything inside Docker, use:
+`DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/agent_platform`
+
 ### 3. Run Database Migrations
 
 ```bash
@@ -38,7 +44,21 @@ You can interact with the `SimpleChatAgent` using the provided CLI tool.
 PYTHONPATH=. python3 scripts/chat_cli.py "Hello, how are you?"
 ```
 
-> **Note:** If you get a `socket.gaierror`, it means your `DATABASE_URL` host is incorrect. If you are running locally without Docker, ensure your `.env` has `DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/agent_platform`.
+> **Note:** If you get a `socket.gaierror`, it means your `DATABASE_URL` host is incorrect. If you are running locally without Docker, ensure your `.env` has `DATABASE_URL=postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/agent_platform`.
+
+## Troubleshooting
+
+If you encounter issues, use the environment check tool:
+
+```bash
+PYTHONPATH=. python3 scripts/check_env.py
+```
+
+This will show you which configuration files are loaded and where the platform is trying to connect.
+
+### "socket.gaierror: [Errno -2] Name or service not known"
+This means the hostname in your `DATABASE_URL` cannot be resolved.
+- If you see `Host: db` but you are not running inside a Docker container, change it to `127.0.0.1` in your `.env`.
 
 This command will:
 1. Initialize the `SimpleChatAgent`.
