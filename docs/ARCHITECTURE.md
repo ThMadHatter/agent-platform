@@ -1,50 +1,40 @@
 # Agent Platform Architecture
 
-This document describes the high-level and component architecture of the Agent Platform.
+## Core Philosophy
+The Agent Platform is a domain-agnostic, production-grade AI execution engine. It is designed to be "thin" and high-performance, delegating workflow orchestration to n8n while providing a robust environment for agent execution.
 
-## System-Level Architecture (LXC)
+## System Components
 
-The platform is designed to run in a modular environment, typically using Proxmox LXC containers.
+### 1. API Layer (`apps/api/`)
+- **FastAPI**: Provides REST endpoints for agent discovery and execution.
+- **Dynamic Registry**: Discovers agents and their capabilities without hardcoding.
+- **n8n Webhooks**: Specialized endpoints for seamless external integration.
 
-```mermaid
-graph TD
-    User((User)) --> n8n[LXC n8n]
-    n8n --> AP[LXC Agent Platform]
-    AP --> LiteLLM[LXC LiteLLM]
-    AP --> Postgres[(LXC Postgres)]
-    AP --> Qdrant[(LXC Qdrant)]
-    AP --> OpenHands[LXC OpenHands]
+### 2. Execution Engine (`core/execution/`)
+- **AgentRunner**: Manages the lifecycle of an agent execution (Validate, Context, Plan, Execute, Persist).
+- **Retry Engine**: Implements exponential backoff for transient failures during execution steps.
+- **AgentRegistry**: Centralizes agent discovery and metadata.
 
-    LiteLLM --> Gemini(Gemini API)
-    LiteLLM --> OpenAI(OpenAI API)
-    LiteLLM --> Anthropic(Anthropic API)
-    LiteLLM --> Ollama(Local Ollama)
-```
+### 3. LLM Layer (`core/llm/`)
+- **LiteLLM Integration**: Unified entry point for all LLM providers (Gemini, OpenAI, Anthropic, etc.).
+- **Complexity-based Router**: Automatically selects the most appropriate model based on task complexity.
+- **Prompt Registry**: Jinja2-based template management for structured prompts.
 
-### Component Responsibilities
+### 4. Storage Layer (`core/storage/`)
+- **Metadata Store (PostgreSQL)**: Tracks execution history, steps, artifacts, and token usage.
+- **Document Store (Google Drive)**: Manages binary files and long-term document storage.
+- **Vector Store (Qdrant)**: Enables semantic search and RAG capabilities for agents.
 
-1.  **n8n**: Orchestrates the high-level workflow and triggers tasks on the Agent Platform via webhooks.
-2.  **Agent Platform (This Repo)**: The core FastAPI backend. Manages agent lifecycles, state transitions, metadata storage, and interaction with other services.
-3.  **LiteLLM**: Acts as a unified gateway for all Large Language Models. Standardizes requests/responses and provides complexity-based routing.
-4.  **Postgres**: Relational database for storing execution history, steps, artifacts, and token usage.
-5.  **Qdrant**: Vector database for semantic storage and retrieval of agent outputs and analyzed codebases.
-6.  **OpenHands**: Coding-specific agent that performs the actual file modifications and command executions (Planned integration).
+### 5. Agent Layer (`agents/`)
+- **Shared Base**: Defines the contract for all agents (`BaseAgent`).
+- **Domain Agents**: Specialized agents (Medical, Job, Coding) that orchestrate internal services.
+- **Internal Services**: Reusable business logic components within a domain.
 
-## Agent Platform Internal Architecture
-
-The platform follows a modular design focused on decoupled storage and execution.
-
-- **`apps/api`**: FastAPI application, routers, and dependencies.
-- **`core/execution`**: The `AgentRunner` which implements a state machine for agent execution.
-- **`core/llm`**: Unified `LiteLLMProvider` and `LiteLLMRouter`.
-- **`core/storage`**: Abstractions for Postgres, Qdrant, and Google Drive.
-- **`agents`**: Specialized agent implementations (e.g., `RepoAnalyzerAgent`, `MedicalAgent`).
-- **`database`**: SQLAlchemy models and Alembic migrations.
-
-## Target Task-to-Production Workflow
-
-1.  **Task Initiation**: Received via API.
-2.  **Analysis**: `RepoAnalyzerAgent` inspects the codebase.
-3.  **Plan & Code**: OpenHands performs modifications.
-4.  **Verification**: Automated tests run in a test environment.
-5.  **Deployment**: Successful changes are pushed to production.
+## Execution Lifecycle
+1. **Request**: n8n calls POST `/execute`.
+2. **Validation**: Runner validates input against the agent's Pydantic schema.
+3. **Context Retrieval**: Agent gathers necessary data (e.g., downloads files, searches vector store).
+4. **Planning**: Agent determines the sequence of actions.
+5. **Execution**: Agent executes steps, using the **Retry Engine** for LLM calls.
+6. **Persistence**: Results are stored in the Metadata Store and Vector Store.
+7. **Polling**: n8n polls GET `/executions/{id}` until completion.

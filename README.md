@@ -13,14 +13,17 @@ The platform utilizes a **Unified LiteLLM Architecture**. Instead of maintaining
 3.  **Intelligent Router**: Routes tasks to different models based on complexity scores, optimizing for cost and performance.
 4.  **Storage Layer**: Decoupled Metadata (PostgreSQL), Document (Google Drive), and Vector (Qdrant) stores.
 5.  **Agent Execution Engine**: A state-machine-driven runner that manages agent lifecycles, retries, and artifact persistence.
+- **Agent Capability Registry**: Dynamic discovery of agents and their schemas for n8n integration.
+- **Retry Engine**: Built-in exponential backoff for transient execution failures.
 
 ## Features
 
 - **Unified LiteLLM Gateway**: One interface for all models.
 - **Microservice Architecture**: Decoupled storage, execution, and LLM layers.
-- **Reference Agents**:
-  - `MedicalAgent`: End-to-end OCR, extraction, and normalization.
-  - `RepoAnalyzerAgent`: Codebase analysis with complexity-based routing.
+- **Reference Domains**:
+  - `Job Domain`: LinkedIn ingestion, Resume optimization, and Application tracking.
+  - `Medical Domain`: End-to-end OCR, extraction, and normalization.
+  - `Coding Domain`: Repository analysis with complexity-based routing.
 - **Platform Capabilities**:
   - **Dynamic Routing**: Automatic model selection based on task complexity.
   - **Structured Outputs**: Native JSON schema enforcement via LiteLLM.

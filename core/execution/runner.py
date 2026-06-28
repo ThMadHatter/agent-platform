@@ -7,13 +7,15 @@ from agents.shared.base import BaseAgent, AgentOutput
 from core.storage.base import MetadataStore
 from core.telemetry.tracing import get_tracer
 from core.events.bus import event_bus
+from core.execution.retry import RetryEngine
 
 logger = logging.getLogger(__name__)
 tracer = get_tracer(__name__)
 
 class AgentRunner:
-    def __init__(self, metadata_store: MetadataStore):
+    def __init__(self, metadata_store: MetadataStore, retry_engine: Optional[RetryEngine] = None):
         self.metadata_store = metadata_store
+        self.retry_engine = retry_engine or RetryEngine()
 
     async def run(self, agent: BaseAgent, input_data: Dict[str, Any]) -> str:
         execution_id = str(uuid.uuid4())
@@ -104,7 +106,8 @@ class AgentRunner:
 
         try:
             with tracer.start_as_current_span(f"step_{step_name}") as span:
-                result = await func(*args, **kwargs)
+                # Use retry engine for steps
+                result = await self.retry_engine.execute_with_retry(func, *args, **kwargs)
 
                 await self.metadata_store.update_step(step_id, {
                     "status": "completed",

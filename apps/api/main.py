@@ -9,10 +9,7 @@ from core.config import settings
 from core.telemetry.logging import setup_logging
 from core.telemetry.tracing import setup_tracing
 from apps.api.dependencies import runner, metadata_store, document_store, vector_store, llm_provider, prompt_registry
-from agents.medical.agent import MedicalAgent
-from agents.coding.analyzer_agent import RepoAnalyzerAgent
-from agents.simplechat.agent import SimpleChatAgent
-from core.llm.litellm_client import LiteLLMRouter
+from core.execution.registry import agent_registry
 
 # Initialize app
 app = FastAPI(title=settings.app_name)
@@ -21,24 +18,21 @@ setup_tracing()
 
 templates = Jinja2Templates(directory="apps/api/templates")
 
-# Agent mapping
-agents = {
-    "medical": MedicalAgent(metadata_store, document_store, vector_store, llm_provider, prompt_registry),
-    "repo_analyzer": RepoAnalyzerAgent(metadata_store, document_store, vector_store, LiteLLMRouter(), prompt_registry),
-    "simple_chat": SimpleChatAgent(metadata_store, document_store, vector_store, llm_provider, prompt_registry)
-}
-
 # Import and include routers
 from apps.api.routers import n8n_webhook
 app.include_router(n8n_webhook.router)
 
 # API Routes
+@app.get("/api/v1/agents")
+async def list_agents():
+    return agent_registry.list_agents()
+
 @app.post("/api/v1/agents/{agent_name}/execute")
 async def execute_agent(agent_name: str, input_data: Dict[str, Any]):
-    if agent_name not in agents:
+    agent = agent_registry.get_agent(agent_name)
+    if not agent:
         raise HTTPException(status_code=404, detail="Agent not found")
 
-    agent = agents[agent_name]
     execution_id = await runner.run(agent, input_data)
     return {"execution_id": execution_id}
 
@@ -104,5 +98,5 @@ async def execution_detail(request: Request, execution_id: str):
 async def playground(request: Request):
     return templates.TemplateResponse("playground.html", {
         "request": request,
-        "agents": list(agents.keys())
+        "agents": [a.name for a in agent_registry.list_agents()]
     })
