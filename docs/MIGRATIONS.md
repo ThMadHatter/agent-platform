@@ -37,6 +37,10 @@ The `env.py` has been fixed to:
 
 ## Troubleshooting
 
+- **"socket.gaierror: [Errno -2] Name or service not known"**: This usually means the host in your `DATABASE_URL` cannot be resolved.
+    - If you are running locally (not in Docker), ensure the host is `localhost` or `127.0.0.1`.
+    - If you are in Docker, ensure the host matches the service name (usually `db`).
+- **"Connection refused" (Errno 111)**: The host is resolvable, but no database is listening on that port. Ensure your Postgres container/service is running.
 - **"sqlalchemy.exc.NoSuchModuleError"**: Ensure you have `asyncpg` installed and the URL starts with `postgresql+asyncpg://`.
 - **"Target database is not up to date"**: Run `make migrate` to apply pending revisions.
 - **Empty migrations**: If `--autogenerate` produces an empty `upgrade()` function, ensure your new model is imported in `database/models.py` and that `Base` is used correctly.

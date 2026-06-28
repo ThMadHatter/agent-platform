@@ -8,6 +8,10 @@ class Settings(BaseSettings):
     # Database
     database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/agent_platform"
 
+    @property
+    def sync_database_url(self) -> str:
+        return self.database_url.replace("asyncpg", "psycopg2")
+
     # LiteLLM / LLM Gateway
     litellm_base_url: Optional[str] = None
     litellm_api_key: Optional[str] = None

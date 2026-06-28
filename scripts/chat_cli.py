@@ -10,8 +10,22 @@ from apps.api.dependencies import (
     metadata_store, document_store, vector_store, llm_provider, prompt_registry, runner
 )
 from agents.simplechat.agent import SimpleChatAgent
+from sqlalchemy import text
+
+async def check_db_connectivity():
+    try:
+        async with metadata_store.async_session() as session:
+            await session.execute(text("SELECT 1"))
+        return True
+    except Exception as e:
+        print(f"Error: Could not connect to the database. {e}")
+        print("Please check your DATABASE_URL and ensure the database is running.")
+        return False
 
 async def run_chat(message: str):
+    if not await check_db_connectivity():
+        return
+
     agent = SimpleChatAgent(
         metadata_store=metadata_store,
         document_store=document_store,

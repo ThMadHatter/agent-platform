@@ -38,6 +38,8 @@ You can interact with the `SimpleChatAgent` using the provided CLI tool.
 PYTHONPATH=. python3 scripts/chat_cli.py "Hello, how are you?"
 ```
 
+> **Note:** If you get a `socket.gaierror`, it means your `DATABASE_URL` host is incorrect. If you are running locally without Docker, ensure your `.env` has `DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/agent_platform`.
+
 This command will:
 1. Initialize the `SimpleChatAgent`.
 2. Send your message to the agent.
