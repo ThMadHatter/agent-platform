@@ -7,25 +7,27 @@ from agents.shared.base import BaseAgent, AgentOutput
 from core.storage.base import MetadataStore
 from core.telemetry.tracing import get_tracer
 from core.events.bus import event_bus
+from core.execution.retry import RetryEngine
 
 logger = logging.getLogger(__name__)
 tracer = get_tracer(__name__)
 
 class AgentRunner:
-    def __init__(self, metadata_store: MetadataStore):
+    def __init__(self, metadata_store: MetadataStore, retry_engine: Optional[RetryEngine] = None):
         self.metadata_store = metadata_store
+        self.retry_engine = retry_engine or RetryEngine()
 
-    async def run(self, agent: BaseAgent, input_data: Dict[str, Any]) -> str:
-        execution_id = str(uuid.uuid4())
-
-        # Initial save
-        await self.metadata_store.save_execution({
-            "id": execution_id,
-            "agent_name": agent.name,
-            "status": "pending",
-            "input_data": input_data,
-            "start_time": datetime.utcnow()
-        })
+    async def run(self, agent: BaseAgent, input_data: Dict[str, Any], execution_id: Optional[str] = None) -> str:
+        if not execution_id:
+            execution_id = str(uuid.uuid4())
+            # Save initial state if not already saved by caller (e.g. async route)
+            await self.metadata_store.save_execution({
+                "id": execution_id,
+                "agent_name": agent.name,
+                "status": "pending",
+                "input_data": input_data,
+                "start_time": datetime.utcnow()
+            })
 
         await event_bus.emit("execution_started", {"execution_id": execution_id, "agent_name": agent.name})
 
@@ -57,9 +59,17 @@ class AgentRunner:
                 end_time = datetime.utcnow()
                 execution_info = await self.metadata_store.get_execution(execution_id)
                 start_time = execution_info["start_time"]
+
+                # Handle start_time being string or datetime
+                if isinstance(start_time, str):
+                    try:
+                        start_time = datetime.fromisoformat(start_time)
+                    except:
+                        start_time = datetime.utcnow()
+
                 duration = (end_time - start_time).total_seconds()
 
-                status = "completed" if agent_output.success else "failed"
+                status = "succeeded" if agent_output.success else "failed"
                 await self.metadata_store.update_execution(execution_id, {
                     "status": status,
                     "output_data": agent_output.data,
@@ -104,7 +114,8 @@ class AgentRunner:
 
         try:
             with tracer.start_as_current_span(f"step_{step_name}") as span:
-                result = await func(*args, **kwargs)
+                # Use retry engine for steps
+                result = await self.retry_engine.execute_with_retry(func, *args, **kwargs)
 
                 await self.metadata_store.update_step(step_id, {
                     "status": "completed",

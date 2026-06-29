@@ -3,16 +3,12 @@ from typing import Any, Dict
 import logging
 
 from core.execution.runner import AgentRunner
-from agents.coding.analyzer_agent import RepoAnalyzerAgent
-from apps.api.dependencies import runner, metadata_store, document_store, vector_store, prompt_registry
-from core.llm.litellm_client import LiteLLMRouter
+from core.execution.registry import agent_registry
+from apps.api.dependencies import runner, metadata_store
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/webhooks/n8n", tags=["webhooks"])
-
-# Initialize LiteLLM Router for this agent
-litellm_router = LiteLLMRouter()
 
 @router.post("/analyze-repo")
 async def analyze_repo_webhook(payload: Dict[str, Any]):
@@ -29,14 +25,10 @@ async def analyze_repo_webhook(payload: Dict[str, Any]):
     if "repo_path" not in payload:
         raise HTTPException(status_code=400, detail="Missing 'repo_path' in payload")
 
-    # Instantiate the agent
-    agent = RepoAnalyzerAgent(
-        metadata_store=metadata_store,
-        document_store=document_store,
-        vector_store=vector_store,
-        llm_router=litellm_router,
-        prompt_registry=prompt_registry
-    )
+    # Get the agent from registry
+    agent = agent_registry.get_agent("repo_analyzer")
+    if not agent:
+        raise HTTPException(status_code=500, detail="RepoAnalyzerAgent not registered")
 
     try:
         # Run the agent using the platform runner

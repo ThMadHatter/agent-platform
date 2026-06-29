@@ -1,16 +1,12 @@
-from core.storage.postgres import PostgreSQLMetadataStore
-from core.storage.gdrive import GoogleDriveDocumentStore
-from core.storage.qdrant import QdrantVectorStore
-from core.execution.runner import AgentRunner
-from core.llm.litellm_client import LiteLLMProvider
-from core.llm.prompt_registry import PromptRegistry
-from core.config import settings
+from core.execution.setup import setup_platform
+from core.execution.registry import agent_registry
 
-# Shared instances
-metadata_store = PostgreSQLMetadataStore()
-document_store = GoogleDriveDocumentStore(settings.google_drive_credentials_path)
-vector_store = QdrantVectorStore()
-llm_provider = LiteLLMProvider(model_name=settings.default_model)
-prompt_registry = PromptRegistry(["agents/medical/prompts", "agents/coding/prompts", "core/llm/prompts"])
+# Initialize platform and get shared instances
+runner, service_context = setup_platform()
 
-runner = AgentRunner(metadata_store)
+# Shortcuts for easy import
+metadata_store = service_context.metadata_store
+document_store = service_context.document_store
+vector_store = service_context.vector_store
+llm_provider = service_context.llm_provider
+prompt_registry = service_context.prompt_registry

@@ -1,69 +1,94 @@
 # Agent Platform
 
-A production-grade AI agent execution platform designed for Proxmox LXC.
+A thin API/router layer designed to connect **n8n** with specialized AI agents.
 
-## Architecture: Unified LLM Gateway
+## Architecture
 
-The platform utilizes a **Unified LiteLLM Architecture**. Instead of maintaining disparate integrations for every AI provider, all LLM completions and embeddings are routed through a single gateway powered by **LiteLLM**.
+The platform acts as a bridge between orchestration tools (like n8n) and underlying agent implementations.
 
-### Core Components
+- **API Layer**: FastAPI-based REST API providing standardized endpoints for agent discovery and execution.
+- **Agent Registry**: Centralized registry for agent metadata, capabilities, and schemas.
+- **Service Layer**: Common interfaces for external integrations (PostgreSQL, Qdrant, Google Drive, LiteLLM).
+- **Runner**: Robust execution engine with support for sync/async patterns and retries.
 
-1.  **FastAPI Backend**: The entry point for orchestrating agent executions.
-2.  **Unified LLM Provider (`core/llm/litellm_client.py`)**: A single class that wraps the LiteLLM library, allowing the platform to interact with 100+ LLM providers (OpenAI, Anthropic, Gemini, Ollama, etc.) using a standardized interface.
-3.  **Intelligent Router**: Routes tasks to different models based on complexity scores, optimizing for cost and performance.
-4.  **Storage Layer**: Decoupled Metadata (PostgreSQL), Document (Google Drive), and Vector (Qdrant) stores.
-5.  **Agent Execution Engine**: A state-machine-driven runner that manages agent lifecycles, retries, and artifact persistence.
+## Quick Start
 
-## Features
+### Local Setup
 
-- **Unified LiteLLM Gateway**: One interface for all models.
-- **Microservice Architecture**: Decoupled storage, execution, and LLM layers.
-- **Reference Agents**:
-  - `MedicalAgent`: End-to-end OCR, extraction, and normalization.
-  - `RepoAnalyzerAgent`: Codebase analysis with complexity-based routing.
-- **Platform Capabilities**:
-  - **Dynamic Routing**: Automatic model selection based on task complexity.
-  - **Structured Outputs**: Native JSON schema enforcement via LiteLLM.
-  - **Prompt Registry**: External Jinja2 templates for manageable prompt engineering.
-  - **Usage Tracking**: Detailed token and cost logging for every execution.
-- **Operational Ready**: Docker Compose, Alembic migrations, Structured Logging, OpenTelemetry.
+1. **Clone the repository**
+2. **Install dependencies**:
+   ```bash
+   pip install -r requirements.txt
+   ```
+3. **Configure environment**:
+   Copy `.env.example` to `.env` and fill in your credentials.
+   ```bash
+   cp .env.example .env
+   ```
+4. **Run the API**:
+   ```bash
+   uvicorn apps.api.main:app --reload
+   ```
 
-## Getting Started
+### External Services
 
-### Prerequisites
+The platform requires the following external services, configured via environment variables:
+- **PostgreSQL**: Used for metadata and execution history storage.
+- **Qdrant**: Vector database for semantic search and agent memory.
+- **LiteLLM**: Unified interface for multiple LLM providers (OpenAI, Anthropic, Gemini, etc.).
+- **Google Drive**: Optional document storage for agents.
 
-- Python 3.12+
-- Docker & Docker Compose
-- LLM API Keys (OpenAI, Anthropic, Gemini, etc.)
+## API Documentation
 
-### Local Development
+### Agent Discovery
+- `GET /api/v1/agents`: List all registered agents.
+- `GET /api/v1/agents/{agent_id}`: Get metadata for a specific agent.
 
-1.  **Install dependencies**:
-    ```bash
-    make install
-    ```
-2.  **Setup Environment**:
-    Copy `.env.example` to `.env` and fill in your LiteLLM and Provider keys.
-3.  **Run Infrastructure**:
-    ```bash
-    make up
-    ```
-4.  **Run Migrations**:
-    ```bash
-    make migrate
-    ```
-5.  **Start the API**:
-    ```bash
-    make run
-    ```
+### Agent Execution
+- `POST /api/v1/agents/{agent_id}/run`: Run an agent synchronously.
+- `POST /api/v1/agents/{agent_id}/run-async`: Start an async agent execution.
+- `GET /api/v1/executions/{execution_id}`: Check the status and result of an execution.
+
+## n8n Integration
+
+### Sync Execution Example
+In n8n, use the **HTTP Request** node:
+- **Method**: POST
+- **URL**: `http://platform-url/api/v1/agents/simple_chat/run`
+- **Body**:
+  ```json
+  {
+    "message": "Analyze this data: {{ $json.data }}"
+  }
+  ```
+
+### Async Execution Pattern
+1. **POST** to `/run-async` to get an `execution_id`.
+2. **Wait** (using a Wait node).
+3. **GET** from `/api/v1/executions/{execution_id}` until status is `succeeded` or `failed`.
+
+## Adding a New Agent
+
+1. Create a new directory in `agents/`.
+2. Implement your agent by inheriting from `BaseAgent`.
+3. Define your input/output schemas using Pydantic.
+4. Register your agent in `core/execution/setup.py`.
+
+## Model Routing
+
+Model routing is configurable via `config/model_routing.yaml`. You can map complexity scores (1-10) to specific models or aliases.
+
+```yaml
+models:
+  default: "openai/gpt-4o"
+  cheap: "openai/gpt-4o-mini"
+routing:
+  1: "cheap"
+  5: "default"
+```
 
 ## Documentation
-
-- [Simple Start Guide](docs/SIMPLE_START_GUIDE.md)
-- [Architecture](docs/ARCHITECTURE.md)
-- [Domain Model & Workflow](docs/DOMAIN_MODEL.md)
+- [Architecture Overview](docs/ARCHITECTURE.md)
+- [N8N Integration Guide](docs/N8N_INTEGRATION.md)
 - [Database Migrations](docs/MIGRATIONS.md)
-- [Agent Handoff Guide](docs/AGENT_HANDOFF.md)
-- [LiteLLM Integration & Routing Guide](docs/LITELLM_INTEGRATION_AND_ROUTING_GUIDE.md)
-- [Operations Guide](docs/operations.md)
-- [Agent Debugging](docs/HOWTO_DEBUG_AGENTS.md)
+- [Agent Reference](docs/agents/)
