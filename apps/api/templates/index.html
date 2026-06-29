@@ -56,13 +56,13 @@
                     <td>{{ execution.id[:8] }}...</td>
                     <td>{{ execution.agent_name }}</td>
                     <td>
-                        <span class="badge {% if execution.status == 'completed' %}bg-success{% elif execution.status == 'failed' %}bg-danger{% else %}bg-warning{% endif %}">
+                        <span class="badge {% if execution.status == 'succeeded' or execution.status == 'completed' %}bg-success{% elif execution.status == 'failed' %}bg-danger{% else %}bg-warning{% endif %}">
                             {{ execution.status }}
                         </span>
                     </td>
-                    <td>{{ execution.start_time.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                    <td>{{ execution.start_time }}</td>
                     <td>{{ "%.2f"|format(execution.duration_seconds or 0) }}s</td>
-                    <td><a href="/executions/{{ execution.id }}" class="btn btn-sm btn-outline-primary">View Detail</a></td>
+                    <td><a href="/dashboard/executions/{{ execution.id }}" class="btn btn-sm btn-outline-primary">View Detail</a></td>
                 </tr>
                 {% endfor %}
             </tbody>

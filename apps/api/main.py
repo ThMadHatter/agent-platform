@@ -8,7 +8,7 @@ import os
 from core.config import settings
 from core.telemetry.logging import setup_logging
 from core.telemetry.tracing import setup_tracing
-from apps.api.dependencies import runner, metadata_store, document_store, vector_store, llm_provider, prompt_registry
+from apps.api.dependencies import runner, metadata_store, service_context
 from core.execution.registry import agent_registry
 
 # Initialize app
@@ -19,33 +19,10 @@ setup_tracing()
 templates = Jinja2Templates(directory="apps/api/templates")
 
 # Import and include routers
-from apps.api.routers import n8n_webhook
+from apps.api.routers import n8n_webhook, agents, executions
 app.include_router(n8n_webhook.router)
-
-# API Routes
-@app.get("/api/v1/agents")
-async def list_agents():
-    return agent_registry.list_agents()
-
-@app.post("/api/v1/agents/{agent_name}/execute")
-async def execute_agent(agent_name: str, input_data: Dict[str, Any]):
-    agent = agent_registry.get_agent(agent_name)
-    if not agent:
-        raise HTTPException(status_code=404, detail="Agent not found")
-
-    execution_id = await runner.run(agent, input_data)
-    return {"execution_id": execution_id}
-
-@app.get("/api/v1/executions")
-async def list_executions(limit: int = 100, offset: int = 0):
-    return await metadata_store.list_executions(limit, offset)
-
-@app.get("/api/v1/executions/{execution_id}")
-async def get_execution(execution_id: str):
-    execution = await metadata_store.get_execution(execution_id)
-    if not execution:
-        raise HTTPException(status_code=404, detail="Execution not found")
-    return execution
+app.include_router(agents.router)
+app.include_router(executions.router)
 
 @app.get("/health")
 async def health():
@@ -70,13 +47,13 @@ async def health_litellm():
 # Dashboard Routes
 @app.get("/", response_class=HTMLResponse)
 async def dashboard(request: Request):
-    executions = await metadata_store.list_executions(limit=20)
-    total = len(executions)
-    failures = sum(1 for e in executions if e["status"] == "failed")
+    executions_list = await metadata_store.list_executions(limit=20)
+    total = len(executions_list)
+    failures = sum(1 for e in executions_list if e["status"] == "failed")
 
     return templates.TemplateResponse("index.html", {
         "request": request,
-        "executions": executions,
+        "executions": executions_list,
         "stats": {
             "total": total,
             "failures": failures,
@@ -84,7 +61,7 @@ async def dashboard(request: Request):
         }
     })
 
-@app.get("/executions/{execution_id}", response_class=HTMLResponse)
+@app.get("/dashboard/executions/{execution_id}", response_class=HTMLResponse)
 async def execution_detail(request: Request, execution_id: str):
     execution = await metadata_store.get_execution(execution_id)
     if not execution:

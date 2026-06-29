@@ -3,9 +3,7 @@ from typing import Any, Dict, List, Optional
 from pydantic import Field
 
 from agents.shared.base import BaseAgent, AgentInput, AgentOutput
-from core.storage.base import MetadataStore, DocumentStore, VectorStore
-from core.llm.litellm_client import LiteLLMProvider
-from core.llm.prompt_registry import PromptRegistry
+from core.services.context import ServiceContext
 from .services.job_services import (
     LinkedInJobIngestionService,
     JobDescriptionParser,
@@ -22,25 +20,13 @@ class JobAgentInput(AgentInput):
     resume_content: Optional[str] = None
 
 class JobAgent(BaseAgent):
-    def __init__(
-        self,
-        metadata_store: MetadataStore,
-        document_store: DocumentStore,
-        vector_store: VectorStore,
-        llm_provider: LiteLLMProvider,
-        prompt_registry: PromptRegistry
-    ):
-        super().__init__(name="job")
-        self.metadata_store = metadata_store
-        self.document_store = document_store
-        self.vector_store = vector_store
-        self.llm_provider = llm_provider
-        self.prompt_registry = prompt_registry
+    def __init__(self, context: ServiceContext):
+        super().__init__(name="job", context=context)
 
         # Internal services
         self.ingestion_service = LinkedInJobIngestionService()
-        self.parser_service = JobDescriptionParser(llm_provider, prompt_registry)
-        self.optimizer_service = ResumeOptimizer(llm_provider, prompt_registry)
+        self.parser_service = JobDescriptionParser(context.llm_provider, context.prompt_registry)
+        self.optimizer_service = ResumeOptimizer(context.llm_provider, context.prompt_registry)
         self.tracker_service = ApplicationTracker()
 
     async def validate(self, input_data: Dict[str, Any]) -> JobAgentInput:
@@ -49,7 +35,7 @@ class JobAgent(BaseAgent):
     async def retrieve_context(self, validated_input: JobAgentInput) -> Dict[str, Any]:
         context = {"input": validated_input}
         if validated_input.resume_id:
-            resume_content = await self.document_store.download(validated_input.resume_id)
+            resume_content = await self.context.document_store.download(validated_input.resume_id)
             context["resume_content"] = resume_content.read().decode('utf-8')
         elif validated_input.resume_content:
             context["resume_content"] = validated_input.resume_content
@@ -80,15 +66,7 @@ class JobAgent(BaseAgent):
             raise ValueError(f"Unknown workflow: {workflow}")
 
     async def execute(self, plan: List[Dict[str, Any]], execution_id: str) -> Dict[str, Any]:
-        # Implementation of execution logic based on plan
-        # Note: In this architecture, execute() orchestrates the internal services.
-
-        # We need the context from the runner, but runner doesn't pass it back to execute.
-        # However, we can re-retrieve it or the runner could be updated.
-        # For now, let's assume we re-run retrieve_context or have it stored.
-
-        # Re-fetch execution info to get input
-        execution_info = await self.metadata_store.get_execution(execution_id)
+        execution_info = await self.context.metadata_store.get_execution(execution_id)
         input_data = JobAgentInput(**execution_info["input_data"])
         context = await self.retrieve_context(input_data)
 
@@ -101,8 +79,7 @@ class JobAgent(BaseAgent):
             results["job_data"] = job_data
             results["parsed_job"] = parsed_job
 
-            # Storage
-            await self.vector_store.upsert("jobs", [{"id": execution_id, "data": {**job_data, **parsed_job}}])
+            await self.context.vector_store.upsert("jobs", [{"id": execution_id, "data": {**job_data, **parsed_job}}])
 
         elif workflow == "resume_optimization":
             job_data = await self.ingestion_service.scrape_job(input_data.job_url)
@@ -114,8 +91,8 @@ class JobAgent(BaseAgent):
 
         elif workflow == "resume_ingestion":
             resume_content = context.get("resume_content", "")
-            prompt = self.prompt_registry.render("resume_parser.j2", resume=resume_content)
-            response = await self.llm_provider.generate_structured(prompt, schema={})
+            prompt = self.context.prompt_registry.render("resume_parser.j2", resume=resume_content)
+            response = await self.context.llm_provider.generate_structured(prompt, schema={})
             import json
             try:
                 experience = json.loads(response.content)
@@ -123,7 +100,7 @@ class JobAgent(BaseAgent):
                 experience = {"raw": response.content}
 
             results["experience"] = experience
-            await self.vector_store.upsert("user_knowledge", [{"id": execution_id, "data": experience}])
+            await self.context.vector_store.upsert("user_knowledge", [{"id": execution_id, "data": experience}])
 
         return results
 
@@ -131,4 +108,4 @@ class JobAgent(BaseAgent):
         return AgentOutput(success=True, data=raw_output)
 
     async def persist(self, output: AgentOutput, execution_id: str) -> None:
-        await self.metadata_store.save_artifact(execution_id, "job_execution_result", "json", output.data)
+        await self.context.metadata_store.save_artifact(execution_id, "job_execution_result", "json", output.data)

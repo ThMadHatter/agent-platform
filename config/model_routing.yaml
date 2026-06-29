@@ -1,0 +1,17 @@
+models:
+  default: "openai/gpt-4o"
+  complex: "openai/gpt-4o"
+  cheap: "openai/gpt-4o-mini"
+  coding: "openrouter/deepseek/deepseek-coder"
+
+routing:
+  1: "cheap"
+  2: "cheap"
+  3: "cheap"
+  4: "default"
+  5: "default"
+  6: "default"
+  7: "complex"
+  8: "complex"
+  9: "complex"
+  10: "complex"
