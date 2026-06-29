@@ -39,7 +39,8 @@ def setup_platform():
     # Initialize and register agents
     medical_agent = MedicalAgent(service_context)
     agent_registry.register(medical_agent, AgentMetadata(
-        name="medical",
+        id="medical",
+        name="Medical Agent",
         version="1.0.0",
         description="Medical document extraction and normalization agent",
         input_schema={"patient_id": "str", "document_url": "Optional[str]", "gdrive_file_id": "Optional[str]"},
@@ -47,12 +48,13 @@ def setup_platform():
         capabilities=["ocr", "entity_extraction", "normalization"],
         required_services=["OCRProvider"],
         tags=["medical", "extraction"],
-        execution_mode="both"
+        execution_modes=["sync", "async"]
     ))
 
     repo_analyzer = RepoAnalyzerAgent(service_context)
     agent_registry.register(repo_analyzer, AgentMetadata(
-        name="repo_analyzer",
+        id="repo_analyzer",
+        name="Repo Analyzer Agent",
         version="1.0.0",
         description="Repository analysis and code improvement agent",
         input_schema={"repo_path": "str", "complexity_score": "Optional[int]"},
@@ -60,12 +62,13 @@ def setup_platform():
         capabilities=["code_analysis", "vulnerability_detection"],
         required_services=[],
         tags=["coding", "analysis"],
-        execution_mode="both"
+        execution_modes=["sync", "async"]
     ))
 
     simple_chat = SimpleChatAgent(service_context)
     agent_registry.register(simple_chat, AgentMetadata(
-        name="simple_chat",
+        id="simple_chat",
+        name="Simple Chat Agent",
         version="1.0.0",
         description="Simple conversational agent",
         input_schema={"message": "str"},
@@ -73,12 +76,13 @@ def setup_platform():
         capabilities=["conversation"],
         required_services=[],
         tags=["chat"],
-        execution_mode="both"
+        execution_modes=["sync", "async"]
     ))
 
     job_agent = JobAgent(service_context)
     agent_registry.register(job_agent, AgentMetadata(
-        name="job",
+        id="job",
+        name="Job Agent",
         version="1.0.0",
         description="Job domain agent for ingestion, optimization and tracking",
         input_schema={"workflow": "str", "job_url": "Optional[str]", "resume_id": "Optional[str]"},
@@ -86,7 +90,7 @@ def setup_platform():
         capabilities=["job_scraping", "resume_parsing", "resume_optimization"],
         required_services=["LinkedInJobIngestionService", "JobDescriptionParser", "ResumeOptimizer"],
         tags=["job", "career"],
-        execution_mode="both"
+        execution_modes=["sync", "async"]
     ))
 
     return runner, service_context

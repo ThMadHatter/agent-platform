@@ -1,6 +1,8 @@
 import time
 import uuid
 import logging
+import httpx
+import asyncio
 from datetime import datetime
 from typing import Any, Dict, Optional
 from agents.shared.base import BaseAgent, AgentOutput
@@ -84,6 +86,16 @@ class AgentRunner:
                     "agent_name": agent.name
                 })
 
+                # Handle callback
+                if execution_info.get("callback_url"):
+                    await self._send_callback(execution_info["callback_url"], {
+                        "execution_id": execution_id,
+                        "agent_id": agent.name,
+                        "status": status,
+                        "result": agent_output.data,
+                        "error": None
+                    })
+
                 return execution_id
 
         except Exception as e:
@@ -98,7 +110,41 @@ class AgentRunner:
                 "error": str(e),
                 "agent_name": agent.name
             })
+
+            # Handle callback for failure
+            execution_info = await self.metadata_store.get_execution(execution_id)
+            if execution_info and execution_info.get("callback_url"):
+                 await self._send_callback(execution_info["callback_url"], {
+                        "execution_id": execution_id,
+                        "agent_id": agent.name,
+                        "status": "failed",
+                        "result": None,
+                        "error": {
+                            "code": "AGENT_EXECUTION_FAILED",
+                            "message": str(e),
+                            "details": {}
+                        }
+                    })
+
             return execution_id
+
+    async def _send_callback(self, callback_url: str, payload: Dict[str, Any]):
+        """Send execution result to callback URL with retries."""
+        logger.info(f"Sending callback to {callback_url} for execution {payload['execution_id']}")
+
+        async with httpx.AsyncClient() as client:
+            for attempt in range(3):
+                try:
+                    response = await client.post(callback_url, json=payload, timeout=10.0)
+                    response.raise_for_status()
+                    logger.info(f"Callback delivered successfully to {callback_url}")
+                    return
+                except Exception as e:
+                    logger.warning(f"Callback attempt {attempt + 1} failed for {callback_url}: {e}")
+                    if attempt < 2:
+                        await asyncio.sleep(2 ** attempt)
+
+            logger.error(f"Callback failed after 3 attempts for {callback_url}")
 
     async def _run_step(self, execution_id: str, step_name: str, func: Any, *args, **kwargs) -> Any:
         step_id = str(uuid.uuid4())

@@ -18,14 +18,53 @@ setup_tracing()
 
 templates = Jinja2Templates(directory="apps/api/templates")
 
+from apps.api.dependencies import runner, metadata_store, service_context, get_api_key
+
 # Import and include routers
 from apps.api.routers import n8n_webhook, agents, executions
-app.include_router(n8n_webhook.router)
-app.include_router(agents.router)
-app.include_router(executions.router)
+app.include_router(n8n_webhook.router, dependencies=[Depends(get_api_key)])
+app.include_router(agents.router, dependencies=[Depends(get_api_key)])
+app.include_router(executions.router, dependencies=[Depends(get_api_key)])
+
+from apps.api.schemas import HealthResponse
+
+@app.get("/api/v1/health", response_model=HealthResponse)
+async def health():
+    services = {
+        "postgres": "unknown",
+        "qdrant": "unknown",
+        "gdrive": "unknown"
+    }
+
+    # Check Postgres
+    try:
+        from sqlalchemy import text
+        async with metadata_store.async_session() as session:
+            await session.execute(text("SELECT 1"))
+        services["postgres"] = "configured"
+    except Exception:
+        services["postgres"] = "unavailable"
+
+    # Check Qdrant
+    if settings.qdrant_url:
+        services["qdrant"] = "configured"
+    else:
+        services["qdrant"] = "not_configured"
+
+    # Check GDrive
+    if os.path.exists(settings.google_drive_credentials_path):
+        services["gdrive"] = "configured"
+    else:
+        services["gdrive"] = "not_configured"
+
+    return HealthResponse(
+        status="ok",
+        version="1.0.0",
+        services=services
+    )
 
 @app.get("/health")
-async def health():
+async def health_legacy():
     return {"status": "healthy"}
 
 @app.get("/health/db")

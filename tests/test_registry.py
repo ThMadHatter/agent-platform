@@ -7,17 +7,17 @@ def test_registry_initialization():
     setup_platform()
     agents = agent_registry.list_agents()
 
-    agent_names = [a.name for a in agents]
-    assert "medical" in agent_names
-    assert "repo_analyzer" in agent_names
-    assert "simple_chat" in agent_names
-    assert "job" in agent_names
+    agent_ids = [a.id for a in agents]
+    assert "medical" in agent_ids
+    assert "repo_analyzer" in agent_ids
+    assert "simple_chat" in agent_ids
+    assert "job" in agent_ids
 
 def test_get_agent_metadata():
     setup_platform()
     metadata = agent_registry.get_metadata("simple_chat")
     assert metadata is not None
-    assert metadata.name == "simple_chat"
+    assert metadata.id == "simple_chat"
     assert "conversation" in metadata.capabilities
 
 def test_unknown_agent():
