@@ -28,6 +28,10 @@ class Settings(BaseSettings):
     # OpenTelemetry
     otlp_endpoint: str = "http://localhost:4317"
 
+    # Authentication
+    agent_platform_api_key: Optional[str] = None
+    agent_platform_auth_enabled: bool = True
+
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
 settings = Settings()

@@ -28,6 +28,9 @@ class AgentExecution(Base):
     output_data: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     error_message: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
+    client_request_id: Mapped[Optional[str]] = mapped_column(String, nullable=True, index=True)
+    callback_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+
     start_time: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     end_time: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     duration_seconds: Mapped[Optional[float]] = mapped_column(Float, nullable=True)

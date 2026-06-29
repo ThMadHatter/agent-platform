@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from agents.shared.base import BaseAgent
 
 class AgentMetadata(BaseModel):
+    id: str
     name: str
     version: str
     description: str
@@ -10,7 +11,7 @@ class AgentMetadata(BaseModel):
     output_schema: Dict[str, Any]
     capabilities: List[str]
     required_services: List[str]
-    execution_mode: Literal["sync", "async", "both"] = "both"
+    execution_modes: List[Literal["sync", "async"]] = ["sync", "async"]
     tags: List[str] = []
     backend_type: Literal["litellm", "openhands", "custom"] = "litellm"
 
@@ -20,14 +21,14 @@ class AgentRegistry:
         self._metadata: Dict[str, AgentMetadata] = {}
 
     def register(self, agent: BaseAgent, metadata: AgentMetadata):
-        self._agents[agent.name] = agent
-        self._metadata[agent.name] = metadata
+        self._agents[metadata.id] = agent
+        self._metadata[metadata.id] = metadata
 
-    def get_agent(self, name: str) -> Optional[BaseAgent]:
-        return self._agents.get(name)
+    def get_agent(self, agent_id: str) -> Optional[BaseAgent]:
+        return self._agents.get(agent_id)
 
-    def get_metadata(self, name: str) -> Optional[AgentMetadata]:
-        return self._metadata.get(name)
+    def get_metadata(self, agent_id: str) -> Optional[AgentMetadata]:
+        return self._metadata.get(agent_id)
 
     def list_agents(self) -> List[AgentMetadata]:
         return list(self._metadata.values())

@@ -77,17 +77,21 @@ The platform requires the following external services, configured via environmen
 In n8n, use the **HTTP Request** node:
 - **Method**: POST
 - **URL**: `http://platform-url/api/v1/agents/simple_chat/run`
+- **Header**: `Authorization: Bearer <API_KEY>`
 - **Body**:
   ```json
   {
-    "message": "Analyze this data: {{ $json.data }}"
+    "input_data": {
+      "message": "Analyze this data: {{ $json.data }}"
+    }
   }
   ```
 
 ### Async Execution Pattern
-1. **POST** to `/run-async` to get an `execution_id`.
+1. **POST** to `/run-async` with `input_data` to get an `execution_id`.
 2. **Wait** (using a Wait node).
 3. **GET** from `/api/v1/executions/{execution_id}` until status is `succeeded` or `failed`.
+4. Supports **Callbacks** by adding `"callback_url": "..."` to the POST body.
 
 ## Adding a New Agent
 

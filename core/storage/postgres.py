@@ -52,6 +52,8 @@ class PostgreSQLMetadataStore(MetadataStore):
                     "input_data": execution.input_data,
                     "output_data": execution.output_data,
                     "error_message": execution.error_message,
+                "client_request_id": execution.client_request_id,
+                "callback_url": execution.callback_url,
                     "start_time": execution.start_time,
                     "end_time": execution.end_time,
                     "duration_seconds": execution.duration_seconds
@@ -68,10 +70,35 @@ class PostgreSQLMetadataStore(MetadataStore):
                     "id": e.id,
                     "agent_name": e.agent_name,
                     "status": e.status,
+                    "client_request_id": e.client_request_id,
                     "start_time": e.start_time,
                     "duration_seconds": e.duration_seconds
                 } for e in executions
             ]
+
+    async def get_execution_by_client_request_id(self, agent_id: str, client_request_id: str) -> Optional[Dict[str, Any]]:
+        async with self.async_session() as session:
+            stmt = select(AgentExecution).where(
+                AgentExecution.agent_name == agent_id,
+                AgentExecution.client_request_id == client_request_id
+            )
+            result = await session.execute(stmt)
+            execution = result.scalar_one_or_none()
+            if execution:
+                return {
+                    "id": execution.id,
+                    "agent_name": execution.agent_name,
+                    "status": execution.status,
+                    "input_data": execution.input_data,
+                    "output_data": execution.output_data,
+                    "error_message": execution.error_message,
+                    "client_request_id": execution.client_request_id,
+                    "callback_url": execution.callback_url,
+                    "start_time": execution.start_time,
+                    "end_time": execution.end_time,
+                    "duration_seconds": execution.duration_seconds
+                }
+            return None
 
     async def save_artifact(self, execution_id: str, name: str, content_type: str, data: Dict[str, Any]) -> str:
         async with self.async_session() as session:

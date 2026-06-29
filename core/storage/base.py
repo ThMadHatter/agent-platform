@@ -23,6 +23,10 @@ class MetadataStore(ABC):
         pass
 
     @abstractmethod
+    async def get_execution_by_client_request_id(self, agent_id: str, client_request_id: str) -> Optional[Dict[str, Any]]:
+        pass
+
+    @abstractmethod
     async def list_executions(self, limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
         pass
 

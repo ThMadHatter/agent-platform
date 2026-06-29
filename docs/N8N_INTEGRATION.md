@@ -1,9 +1,36 @@
 # n8n Integration Guide - Agent Platform
 
 ## Overview
-The Agent Platform is designed to be orchestrated by n8n. It provides deterministic, machine-readable REST APIs for agent execution, status polling, and history retrieval.
+The Agent Platform is designed to be orchestrated by n8n. It provides deterministic, machine-readable REST APIs for agent execution, status polling, and callback support.
 
-## 1. Agent Discovery
+## Base URL
+All API requests should be made to:
+`http://<your-platform-domain>/api/v1`
+
+## Authentication
+The platform uses Bearer Token authentication.
+
+**Header**: `Authorization: Bearer <AGENT_PLATFORM_API_KEY>`
+
+## 1. Health Check
+Verify the platform and its backend services (Postgres, Qdrant, GDrive) are healthy.
+
+**Endpoint**: `GET /api/v1/health`
+
+**Response**:
+```json
+{
+  "status": "ok",
+  "version": "1.0.0",
+  "services": {
+    "postgres": "configured",
+    "qdrant": "not_configured",
+    "gdrive": "configured"
+  }
+}
+```
+
+## 2. Agent Discovery
 To get a list of all available agents and their capabilities:
 
 **Endpoint**: `GET /api/v1/agents`
@@ -12,9 +39,12 @@ To get a list of all available agents and their capabilities:
 ```json
 [
   {
-    "name": "job",
+    "id": "job",
+    "name": "Job Agent",
     "version": "1.0.0",
     "description": "Job domain agent for ingestion, optimization and tracking",
+    "capabilities": ["job_scraping", "resume_parsing", "resume_optimization"],
+    "execution_modes": ["sync", "async"],
     "input_schema": {
       "workflow": "str",
       "job_url": "Optional[str]",
@@ -24,73 +54,113 @@ To get a list of all available agents and their capabilities:
       "success": "bool",
       "data": "dict"
     },
-    "capabilities": ["job_scraping", "resume_parsing", "resume_optimization"],
     "required_services": ["LinkedInJobIngestionService", "JobDescriptionParser", "ResumeOptimizer"]
   }
 ]
 ```
 
-## 2. Agent Execution
-Agents can be executed by sending a POST request to their specific execution endpoint.
+## 3. Agent Execution
 
-**Endpoint**: `POST /api/v1/agents/{agent_name}/execute`
+### Synchronous Execution (Run and Wait)
+Runs the agent and waits for the result. Best for fast agents (under 30s).
 
-**Request Example (Job Agent)**:
+**Endpoint**: `POST /api/v1/agents/{agent_id}/run`
+
+**Request Body**:
 ```json
 {
-  "workflow": "resume_optimization",
-  "job_url": "https://www.linkedin.com/jobs/view/123456",
-  "resume_content": "I am a software engineer with 10 years of experience..."
+  "input_data": {
+    "message": "Hello"
+  }
 }
 ```
+
+### Asynchronous Execution (Fire and Forget/Poll)
+Starts the agent and returns an execution ID immediately. Recommended for n8n.
+
+**Endpoint**: `POST /api/v1/agents/{agent_id}/run-async`
 
 **Response**:
 ```json
 {
-  "execution_id": "550e8400-e29b-41d4-a716-446655440000"
+  "execution_id": "550e8400-e29b-41d4-a716-446655440000",
+  "agent_id": "job",
+  "status": "queued",
+  "poll_url": "/api/v1/executions/550e8400-e29b-41d4-a716-446655440000"
 }
 ```
 
-## 3. Execution Polling & Results
-Since some executions may take time, n8n should poll the execution status until it reaches a final state (`completed`, `failed`).
+## 4. Execution Status & Polling
+Poll this endpoint using the `execution_id` until `status` is `succeeded` or `failed`.
 
 **Endpoint**: `GET /api/v1/executions/{execution_id}`
 
-**Response (In Progress)**:
+**Final Success Response**:
 ```json
 {
-  "id": "550e8400-e29b-41d4-a716-446655440000",
-  "status": "running",
-  "start_time": "2023-10-27T10:00:00Z"
-}
-```
-
-**Response (Completed)**:
-```json
-{
-  "id": "550e8400-e29b-41d4-a716-446655440000",
-  "status": "completed",
-  "output_data": {
-    "optimized_resume": "Optimized content here..."
+  "execution_id": "550e8400-e29b-41d4-a716-446655440000",
+  "agent_id": "job",
+  "status": "succeeded",
+  "result": {
+    "optimized_resume": "..."
   },
-  "duration_seconds": 12.5
+  "error": null,
+  "duration_seconds": 12.5,
+  "started_at": "2026-06-29T10:00:00Z",
+  "completed_at": "2026-06-29T10:00:12Z"
 }
 ```
 
-## 4. Recommended Workflow Patterns in n8n
-1. **Trigger**: Telegram, Schedule, or Webhook.
-2. **HTTP Request**: POST to `/execute`.
-3. **Wait Node**: Wait for 2-5 seconds.
-4. **HTTP Request**: GET `/executions/{execution_id}`.
-5. **If Node**: Check if status is `completed` or `failed`.
-6. **Loop**: If not finished, return to step 3.
-7. **Process**: Use `output_data` for subsequent steps (e.g., sending a Telegram message).
+## 5. Callback Mode (Webhooks)
+Instead of polling, you can provide a `callback_url`. The platform will POST the final result to this URL when finished.
 
-## 5. Error Handling & Retries
-- The platform has an internal **Retry Engine** for transient failures (e.g., LLM timeouts).
-- For platform-level errors, n8n should implement its own retry logic with exponential backoff.
-- Always check the `status` field in the execution response.
+**Request**:
+```json
+{
+  "input_data": { ... },
+  "callback_url": "https://n8n.your-domain.com/webhook/agent-results"
+}
+```
 
-## 6. Idempotency Guidelines
-- Currently, idempotency is not strictly enforced at the API level.
-- It is recommended to generate a unique `execution_id` or `client_key` in n8n if future deduplication is required.
+## 6. Idempotency
+To prevent duplicate executions (e.g., if n8n retries an HTTP request), use an idempotency key.
+
+**Option A (Header)**: `Idempotency-Key: your-unique-id`
+**Option B (Body)**: `"client_request_id": "your-unique-id"`
+
+If the same key is sent again with the same payload, the platform returns the existing execution instead of starting a new one.
+
+## 7. n8n Example Configuration
+
+### HTTP Request Node (Async Run)
+- **Method**: POST
+- **URL**: `http://platform/api/v1/agents/job/run-async`
+- **Authentication**: Header `Authorization` = `Bearer {{ $env.AGENT_PLATFORM_API_KEY }}`
+- **Body**:
+  ```json
+  {
+    "input_data": {
+      "workflow": "resume_optimization",
+      "job_url": "{{ $json.url }}"
+    },
+    "client_request_id": "n8n-{{ $execution.id }}"
+  }
+  ```
+
+### Polling Logic in n8n
+1. **Initial Wait**: 2 seconds.
+2. **HTTP Request**: `GET /api/v1/executions/{{ $json.execution_id }}`.
+3. **If Node**: `{{ $json.status }}` matches `succeeded` or `failed`.
+4. **Loop**: If not finished, wait 5 seconds and repeat.
+5. **Max Attempts**: 60 (total 5 minutes).
+
+### Error Handling Retries
+- Retry **429, 500, 502, 503, 504** with exponential backoff.
+- Do **not** retry **400, 401, 404, 409, 422**.
+
+## 8. Future: Custom n8n Node
+A dedicated n8n node is planned. It will provide:
+- Dropdown for **Agent Selection** (via `GET /agents`).
+- Simplified **Input Mapping** based on `input_schema`.
+- Built-in **Polling** for "Run and Wait" operations.
+- Automatic **Idempotency** using n8n execution IDs.
