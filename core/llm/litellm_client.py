@@ -14,6 +14,11 @@ litellm.drop_params = True # Drop params not supported by provider
 litellm.api_base = settings.litellm_base_url or "http://localhost:4000"
 litellm.api_key = settings.litellm_api_key or "dummy-key"
 
+# Map aliases to a provider prefix so LiteLLM knows which API format to use at the proxy
+litellm.model_alias_map = {
+    model: f"openai/{model}" for model in settings.allowed_models
+}
+
 logger = logging.getLogger(__name__)
 
 class LiteLLMProvider(LLMProvider):
