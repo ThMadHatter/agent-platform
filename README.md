@@ -15,19 +15,41 @@ The platform acts as a bridge between orchestration tools (like n8n) and underly
 
 ### Local Setup
 
-1. **Clone the repository**
-2. **Install dependencies**:
+1. **Clone the repository**:
    ```bash
-   pip install -r requirements.txt
+   git clone https://github.com/ThMadHatter/agent-platform.git
+   cd agent-platform
    ```
-3. **Configure environment**:
-   Copy `.env.example` to `.env` and fill in your credentials.
+3. **Install dependencies**:
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate
+   pip install .
+   ```
+4. **Configure environment**:
+   Copy `.env.example` to `.env` and fill in your credentials (note: you need to configure at least litellm and postgres, other services are optional)
    ```bash
    cp .env.example .env
    ```
-4. **Run the API**:
+5. **Configure db**:
+   ```bash
+   alembic upgrade head
+   ```
+6. **Run the API**:
    ```bash
    uvicorn apps.api.main:app --reload
+   ```
+7. **Check if server works**:
+   ```bash
+   curl http://localhost:8000/api/v1/agents
+   ```
+8. **Test services via simple chat**:
+   ```bash
+   curl -X POST http://localhost:8000/api/v1/agents/simple_chat/run \
+     -H "Content-Type: application/json" \
+     -d '{
+       "message": "say: Hello world!"
+     }'
    ```
 
 ### External Services
