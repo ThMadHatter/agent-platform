@@ -10,6 +10,12 @@ from core.config import settings
 litellm.telemetry = False # Disable telemetry for privacy
 litellm.drop_params = True # Drop params not supported by provider
 
+# Force LiteLLM to use proxy globally
+litellm.api_base = settings.litellm_base_url or "http://localhost:4000"
+litellm.api_key = settings.litellm_api_key or "dummy-key"
+
+ALLOWED_MODELS = {"basic-profile", "heavy-profile"}
+
 logger = logging.getLogger(__name__)
 
 class LiteLLMProvider(LLMProvider):
@@ -19,6 +25,8 @@ class LiteLLMProvider(LLMProvider):
     """
     def __init__(self, model_name: Optional[str] = None):
         self.model_name = model_name or settings.default_model
+        if self.model_name not in ALLOWED_MODELS:
+            raise ValueError(f"Invalid model: {self.model_name}. Must use profile alias from {ALLOWED_MODELS}.")
 
     async def generate(self, prompt: str, system_prompt: Optional[str] = None, **kwargs) -> LLMResponse:
         messages = []
@@ -30,8 +38,6 @@ class LiteLLMProvider(LLMProvider):
             response = await litellm.acompletion(
                 model=self.model_name,
                 messages=messages,
-                api_base=settings.litellm_base_url,
-                api_key=settings.litellm_api_key,
                 **kwargs
             )
 
@@ -62,8 +68,6 @@ class LiteLLMProvider(LLMProvider):
                     {"role": "system", "content": system_prompt or "You are a helpful assistant."},
                     {"role": "user", "content": prompt}
                 ],
-                api_base=settings.litellm_base_url,
-                api_key=settings.litellm_api_key,
                 response_format={"type": "json_object", "schema": schema} if schema else {"type": "json_object"},
                 **kwargs
             )
@@ -112,17 +116,25 @@ class LiteLLMRouter:
             self._load_defaults()
 
     def _load_defaults(self):
-        self.model_map = {"default": settings.default_model}
-        self.routing_map = {i: "default" for i in range(1, 11)}
+        self.model_map = {"basic": "basic-profile", "heavy": "heavy-profile"}
+        self.routing_map = {i: "basic" if i <= 6 else "heavy" for i in range(1, 11)}
 
     def get_model_for_complexity(self, complexity_score: int) -> str:
         # Clamp score between 1 and 10
         score = max(1, min(10, complexity_score))
-        model_key = self.routing_map.get(score, "default")
-        if isinstance(model_key, int): # Handle cases where YAML keys might be loaded as ints
-             model_key = self.routing_map.get(score, "default")
+        model_key = self.routing_map.get(score, "basic")
+
+        # Ensure we get a string key
+        if not isinstance(model_key, str):
+             model_key = str(model_key)
 
         model_name = self.model_map.get(model_key, settings.default_model)
+
+        # Final safeguard: if model_name is not allowed, force default
+        if model_name not in ALLOWED_MODELS:
+            logger.warning(f"Router resolved to invalid model '{model_name}'. Falling back to default.")
+            return settings.default_model
+
         return model_name
 
     async def route_and_execute(self, task_context: str, complexity_score: int, system_prompt: Optional[str] = None, **kwargs) -> LLMResponse:
