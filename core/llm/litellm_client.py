@@ -1,5 +1,7 @@
 import logging
 import litellm
+import yaml
+import os
 from typing import Any, Dict, List, Optional, Union
 from core.llm.base import LLMProvider, LLMResponse
 from core.config import settings
@@ -86,25 +88,42 @@ class LiteLLMProvider(LLMProvider):
 class LiteLLMRouter:
     """
     Routes tasks to different models based on complexity or other criteria using LiteLLM.
+    Configuration is loaded from a YAML file.
     """
-    def __init__(self, model_map: Optional[Dict[int, str]] = None):
-        self.model_map = model_map or {
-            1: "ollama/qwen3",
-            2: "ollama/qwen3",
-            3: "openrouter/deepseek/deepseek-coder",
-            4: "openrouter/deepseek/deepseek-coder",
-            5: "gemini/gemini-1.5-flash",
-            6: "gemini/gemini-1.5-flash",
-            7: "gemini/gemini-1.5-pro",
-            8: "gemini/gemini-1.5-pro",
-            9: "openai/gpt-4o",
-            10: "openai/gpt-4o"
-        }
+    def __init__(self, config_path: str = "config/model_routing.yaml"):
+        self.config_path = config_path
+        self.model_map = {}
+        self.routing_map = {}
+        self._load_config()
+
+    def _load_config(self):
+        if os.path.exists(self.config_path):
+            try:
+                with open(self.config_path, 'r') as f:
+                    config = yaml.safe_load(f)
+                    self.model_map = config.get('models', {})
+                    self.routing_map = config.get('routing', {})
+                logger.info(f"Loaded model routing configuration from {self.config_path}")
+            except Exception as e:
+                logger.error(f"Failed to load model routing config: {e}")
+                self._load_defaults()
+        else:
+            logger.warning(f"Model routing config not found at {self.config_path}, using defaults.")
+            self._load_defaults()
+
+    def _load_defaults(self):
+        self.model_map = {"default": settings.default_model}
+        self.routing_map = {i: "default" for i in range(1, 11)}
 
     def get_model_for_complexity(self, complexity_score: int) -> str:
         # Clamp score between 1 and 10
         score = max(1, min(10, complexity_score))
-        return self.model_map.get(score, settings.default_model)
+        model_key = self.routing_map.get(score, "default")
+        if isinstance(model_key, int): # Handle cases where YAML keys might be loaded as ints
+             model_key = self.routing_map.get(score, "default")
+
+        model_name = self.model_map.get(model_key, settings.default_model)
+        return model_name
 
     async def route_and_execute(self, task_context: str, complexity_score: int, system_prompt: Optional[str] = None, **kwargs) -> LLMResponse:
         model_name = self.get_model_for_complexity(complexity_score)

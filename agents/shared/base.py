@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional, List
 from pydantic import BaseModel
+from core.services.context import ServiceContext
 
 class AgentInput(BaseModel):
     pass
@@ -11,8 +12,9 @@ class AgentOutput(BaseModel):
     error: Optional[str] = None
 
 class BaseAgent(ABC):
-    def __init__(self, name: str):
+    def __init__(self, name: str, context: ServiceContext):
         self.name = name
+        self.context = context
 
     @abstractmethod
     async def validate(self, input_data: Dict[str, Any]) -> AgentInput:

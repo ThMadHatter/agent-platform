@@ -5,15 +5,19 @@ class Settings(BaseSettings):
     app_name: str = "Agent Platform"
     environment: str = "development"
 
-    # Database
+    # Database (External Service)
     database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/agent_platform"
+
+    @property
+    def sync_database_url(self) -> str:
+        return self.database_url.replace("asyncpg", "psycopg2")
 
     # LiteLLM / LLM Gateway
     litellm_base_url: Optional[str] = None
     litellm_api_key: Optional[str] = None
     default_model: str = "openai/gpt-4o"
 
-    # Qdrant
+    # Qdrant (External Service)
     qdrant_url: str = "http://localhost:6333"
     qdrant_api_key: Optional[str] = None
 
