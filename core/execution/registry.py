@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Type, Optional
+from typing import Any, Dict, List, Type, Optional, Literal
 from pydantic import BaseModel
 from agents.shared.base import BaseAgent
 
@@ -10,6 +10,9 @@ class AgentMetadata(BaseModel):
     output_schema: Dict[str, Any]
     capabilities: List[str]
     required_services: List[str]
+    execution_mode: Literal["sync", "async", "both"] = "both"
+    tags: List[str] = []
+    backend_type: Literal["litellm", "openhands", "custom"] = "litellm"
 
 class AgentRegistry:
     def __init__(self):
