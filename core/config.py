@@ -15,7 +15,8 @@ class Settings(BaseSettings):
     # LiteLLM / LLM Gateway
     litellm_base_url: Optional[str] = None
     litellm_api_key: Optional[str] = None
-    default_model: str = "openai/gpt-4o"
+    default_model: str = "basic-profile"
+    allowed_models: list[str] = ["basic-profile", "heavy-profile"]
 
     # Qdrant (External Service)
     qdrant_url: str = "http://localhost:6333"
