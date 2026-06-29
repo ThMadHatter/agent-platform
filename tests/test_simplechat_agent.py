@@ -30,8 +30,16 @@ def mock_llm():
 
 @pytest.mark.asyncio
 async def test_simple_chat_agent_lifecycle(mock_stores, mock_llm):
+    from core.services.context import ServiceContext
     metadata_store, document_store, vector_store = mock_stores
-    agent = SimpleChatAgent(metadata_store, document_store, vector_store, mock_llm, MagicMock())
+    context = ServiceContext(
+        metadata_store=metadata_store,
+        document_store=document_store,
+        vector_store=vector_store,
+        llm_provider=mock_llm,
+        prompt_registry=MagicMock()
+    )
+    agent = SimpleChatAgent(context)
 
     # 1. Validate
     input_data = {"message": "Hi there!"}

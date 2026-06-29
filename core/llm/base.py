@@ -18,3 +18,7 @@ class LLMProvider(ABC):
     @abstractmethod
     async def generate_structured(self, prompt: str, schema: Dict[str, Any], system_prompt: Optional[str] = None, **kwargs) -> LLMResponse:
         pass
+
+    @abstractmethod
+    async def embed(self, text: str, **kwargs) -> List[float]:
+        pass

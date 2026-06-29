@@ -37,8 +37,16 @@ def mock_registry():
 
 @pytest.mark.asyncio
 async def test_repo_analyzer_agent_lifecycle(mock_stores, mock_router, mock_registry):
+    from core.services.context import ServiceContext
     metadata_store, document_store, vector_store = mock_stores
-    agent = RepoAnalyzerAgent(metadata_store, document_store, vector_store, mock_router, mock_registry)
+    context = ServiceContext(
+        metadata_store=metadata_store,
+        document_store=document_store,
+        vector_store=vector_store,
+        llm_provider=mock_router, # Analyzer expects router but context uses provider, this is a bit messy in original code
+        prompt_registry=mock_registry
+    )
+    agent = RepoAnalyzerAgent(context)
 
     # 1. Validate
     input_data = {"repo_path": "test/repo", "complexity_score": 3}
