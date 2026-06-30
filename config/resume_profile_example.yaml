@@ -1,0 +1,26 @@
+profile_id: matteo-default
+name: Matteo Zappia
+contacts:
+  - icon: envelope
+    icon_solid: true
+    text: matteo.zappia@gmail.com
+    link: mailto:matteo.zappia@gmail.com
+  - icon: linkedin
+    icon_solid: false
+    text: "LinkedIn Profile: matteo-zappia-0b8161114"
+    link: https://linkedin.com/in/matteo-zappia-0b8161114
+  - icon: phone
+    icon_solid: true
+    text: "+39 ..."
+    link: ""
+languages:
+  - flag: IT
+    name: Italian
+    level: 1.0
+  - flag: GB
+    name: English
+    level: 0.8
+  - flag: DE
+    name: German
+    level: 0.3
+summary: "Senior Software Engineer with expertise in AI and Agentic systems."

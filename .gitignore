@@ -2,5 +2,6 @@
 *.egg-info
 .env
 __pycache__/
+config/resume_profile.yaml
 *.py[cod]
 *$py.class

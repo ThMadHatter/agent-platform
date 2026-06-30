@@ -10,8 +10,10 @@ make migrate
 
 ## 2. Seed the Default Resume Profile
 Create the default profile for Matteo. This is required for `cv_generate` and `cv_render` to work correctly.
+1. Copy `config/resume_profile_example.yaml` to `config/resume_profile.yaml` and edit it.
+2. Run the seeding script:
 ```bash
-python scripts/seed_resume_profile.py --profile matteo-default
+python scripts/seed_resume_profile.py --file config/resume_profile.yaml
 ```
 
 ## 3. Configure Qdrant Collection

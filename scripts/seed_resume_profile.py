@@ -1,7 +1,7 @@
 import asyncio
-import uuid
 import sys
 import os
+import yaml
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 
@@ -11,7 +11,16 @@ sys.path.append(os.getcwd())
 from core.config import settings
 from database.models import ResumeProfile
 
-async def seed_profile(profile_id: str):
+async def seed_profile(yaml_path: str):
+    if not os.path.exists(yaml_path):
+        print(f"Error: Profile YAML not found at {yaml_path}")
+        return
+
+    with open(yaml_path, 'r') as f:
+        data = yaml.safe_load(f)
+
+    profile_id = data.get("profile_id", "matteo-default")
+
     engine = create_async_engine(settings.database_url)
     async_session = sessionmaker(
         engine, class_=AsyncSession, expire_on_commit=False
@@ -26,32 +35,18 @@ async def seed_profile(profile_id: str):
 
         if profile:
             print(f"Profile {profile_id} already exists. Updating...")
-            profile.name = "Matteo Zappia"
-            profile.contacts = [
-                {"icon": "envelope", "icon_solid": True, "text": "matteo.zappia@gmail.com", "link": "mailto:matteo.zappia@gmail.com"},
-                {"icon": "linkedin", "icon_solid": False, "text": "LinkedIn", "link": "https://linkedin.com/in/matteo-zappia-0b8161114"},
-                {"icon": "phone", "icon_solid": True, "text": "+39 ...", "link": ""}
-            ]
-            profile.languages = [
-                {"flag": "IT", "name": "Italian", "level": 1.0},
-                {"flag": "GB", "name": "English", "level": 0.8},
-                {"flag": "DE", "name": "German", "level": 0.3}
-            ]
+            profile.name = data.get("name", profile.name)
+            profile.contacts = data.get("contacts", profile.contacts)
+            profile.languages = data.get("languages", profile.languages)
+            profile.summary = data.get("summary", profile.summary)
         else:
             print(f"Creating profile {profile_id}...")
             profile = ResumeProfile(
                 id=profile_id,
-                name="Matteo Zappia",
-                contacts=[
-                    {"icon": "envelope", "icon_solid": True, "text": "matteo.zappia@gmail.com", "link": "mailto:matteo.zappia@gmail.com"},
-                    {"icon": "linkedin", "icon_solid": False, "text": "LinkedIn", "link": "https://linkedin.com/in/matteo-zappia-0b8161114"},
-                    {"icon": "phone", "icon_solid": True, "text": "+39 ...", "link": ""}
-                ],
-                languages=[
-                    {"flag": "IT", "name": "Italian", "level": 1.0},
-                    {"flag": "GB", "name": "English", "level": 0.8},
-                    {"flag": "DE", "name": "German", "level": 0.3}
-                ]
+                name=data.get("name"),
+                contacts=data.get("contacts", []),
+                languages=data.get("languages", []),
+                summary=data.get("summary")
             )
             session.add(profile)
 
@@ -60,8 +55,8 @@ async def seed_profile(profile_id: str):
 
 if __name__ == "__main__":
     import argparse
-    parser = argparse.ArgumentParser(description="Seed resume profile")
-    parser.add_argument("--profile", default="matteo-default", help="Profile ID to seed")
+    parser = argparse.ArgumentParser(description="Seed resume profile from YAML")
+    parser.add_argument("--file", default="config/resume_profile.yaml", help="Path to profile YAML")
     args = parser.parse_args()
 
-    asyncio.run(seed_profile(args.profile))
+    asyncio.run(seed_profile(args.file))
