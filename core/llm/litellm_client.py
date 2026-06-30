@@ -88,6 +88,21 @@ class LiteLLMProvider(LLMProvider):
             enhanced_prompt = f"{prompt}\n\nReturn the output as a valid JSON object matching this schema: {schema}"
             return await self.generate(enhanced_prompt, system_prompt, **kwargs)
 
+    async def embed(self, text: str, **kwargs) -> List[float]:
+        """
+        Generates an embedding for the given text.
+        """
+        try:
+            response = await litellm.aembedding(
+                model=f"openai/{self.model_name}", # Assumes model supports embedding or maps correctly
+                input=[text],
+                **kwargs
+            )
+            return response.data[0]["embedding"]
+        except Exception as e:
+            logger.error(f"LiteLLM embedding error: {e}")
+            raise
+
 class LiteLLMRouter:
     """
     Routes tasks to different models based on complexity or other criteria using LiteLLM.

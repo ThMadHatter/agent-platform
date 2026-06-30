@@ -14,13 +14,15 @@ def mock_deps():
 
 @pytest.mark.asyncio
 async def test_medical_agent_validation(mock_deps):
-    agent = MedicalAgent(
-        mock_deps["metadata"],
-        mock_deps["document"],
-        mock_deps["vector"],
-        mock_deps["llm"],
-        mock_deps["prompts"]
+    from core.services.context import ServiceContext
+    context = ServiceContext(
+        metadata_store=mock_deps["metadata"],
+        document_store=mock_deps["document"],
+        vector_store=mock_deps["vector"],
+        llm_provider=mock_deps["llm"],
+        prompt_registry=mock_deps["prompts"]
     )
+    agent = MedicalAgent(context)
 
     input_data = {"patient_id": "P123", "extraction_type": "labs"}
     validated = await agent.validate(input_data)
@@ -30,13 +32,15 @@ async def test_medical_agent_validation(mock_deps):
 
 @pytest.mark.asyncio
 async def test_medical_agent_plan(mock_deps):
-    agent = MedicalAgent(
-        mock_deps["metadata"],
-        mock_deps["document"],
-        mock_deps["vector"],
-        mock_deps["llm"],
-        mock_deps["prompts"]
+    from core.services.context import ServiceContext
+    context = ServiceContext(
+        metadata_store=mock_deps["metadata"],
+        document_store=mock_deps["document"],
+        vector_store=mock_deps["vector"],
+        llm_provider=mock_deps["llm"],
+        prompt_registry=mock_deps["prompts"]
     )
+    agent = MedicalAgent(context)
 
     plan = await agent.plan({})
     assert len(plan) == 3

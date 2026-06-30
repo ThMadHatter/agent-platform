@@ -19,19 +19,32 @@ async def test_job_agent_registration():
 
 @pytest.mark.asyncio
 async def test_job_agent_workflow_selection():
+    from core.services.context import ServiceContext
     metadata_store = MagicMock()
     document_store = MagicMock()
     vector_store = MagicMock()
     llm_provider = MagicMock()
     prompt_registry = MagicMock()
 
-    agent = JobAgent(metadata_store, document_store, vector_store, llm_provider, prompt_registry)
+    context_obj = ServiceContext(
+        metadata_store=metadata_store,
+        document_store=document_store,
+        vector_store=vector_store,
+        llm_provider=llm_provider,
+        prompt_registry=prompt_registry
+    )
 
-    # Test planning for different workflows
+    agent = JobAgent(context_obj)
+
+    # Test planning for different workflows (including deprecated ones)
     context = {"input": MagicMock(workflow="linkedin_ingestion")}
     plan = await agent.plan(context)
-    assert any(step["step"] == "scrape" for step in plan)
+    assert any(step["step"] == "resolve_and_parse_job" for step in plan)
 
     context = {"input": MagicMock(workflow="resume_optimization")}
     plan = await agent.plan(context)
-    assert any(step["step"] == "optimize" for step in plan)
+    assert any(step["step"] == "generate_cv_data" for step in plan)
+
+    context = {"input": MagicMock(workflow="job_parse")}
+    plan = await agent.plan(context)
+    assert any(step["step"] == "resolve_and_parse_job" for step in plan)

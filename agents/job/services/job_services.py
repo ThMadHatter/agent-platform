@@ -23,13 +23,37 @@ class JobDescriptionParser:
 
     async def parse(self, description: str) -> Dict[str, Any]:
         prompt = self.prompt_registry.render("job_parser.j2", description=description)
-        response = await self.llm_provider.generate_structured(prompt, schema={})
-        # Simplified for demonstration
-        return {
-            "required_skills": ["Python", "PyTorch", "LLMs"],
-            "years_experience": 5,
-            "education": "Master's in CS"
+
+        schema = {
+            "type": "object",
+            "properties": {
+                "title": {"type": "string"},
+                "company": {"type": "string"},
+                "location": {"type": "string"},
+                "domain": {"type": "string"},
+                "seniority": {"type": "string"},
+                "languages": {"type": "array", "items": {"type": "string"}},
+                "tech_stack": {"type": "array", "items": {"type": "string"}},
+                "soft_skills": {"type": "array", "items": {"type": "string"}},
+                "mission_critical": {"type": "array", "items": {"type": "string"}},
+                "preferred_skills": {"type": "array", "items": {"type": "string"}},
+                "responsibilities": {"type": "array", "items": {"type": "string"}},
+                "certifications": {"type": "array", "items": {"type": "string"}},
+                "summary": {"type": "string"}
+            },
+            "required": ["title", "company", "tech_stack", "responsibilities"]
         }
+
+        response = await self.llm_provider.generate_structured(prompt, schema=schema)
+
+        if isinstance(response.content, str):
+            import json
+            try:
+                return json.loads(response.content)
+            except:
+                logger.error(f"Failed to parse LLM response as JSON: {response.content}")
+                return {"raw": response.content}
+        return response.content
 
 class ResumeOptimizer:
     def __init__(self, llm_provider, prompt_registry):
