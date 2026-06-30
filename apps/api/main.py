@@ -8,7 +8,15 @@ import os
 from core.config import settings
 from core.telemetry.logging import setup_logging
 from core.telemetry.tracing import setup_tracing
-from apps.api.dependencies import runner, metadata_store, service_context
+from apps.api.dependencies import (
+    runner,
+    metadata_store,
+    service_context,
+    document_store,
+    vector_store,
+    llm_provider,
+    prompt_registry
+)
 from core.execution.registry import agent_registry
 
 # Initialize app

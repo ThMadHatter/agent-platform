@@ -18,9 +18,14 @@ class Settings(BaseSettings):
     default_model: str = "basic-profile"
     allowed_models: list[str] = ["basic-profile", "heavy-profile"]
 
+    # Agent Platform Auth
+    agent_platform_api_key: str = "your-secret-key"
+    agent_platform_auth_enabled: bool = False
+
     # Qdrant (External Service)
     qdrant_url: str = "http://localhost:6333"
     qdrant_api_key: Optional[str] = None
+    qdrant_cv_collection: str = "cv_knowledge"
 
     # Google Drive
     google_drive_credentials_path: str = "credentials.json"
