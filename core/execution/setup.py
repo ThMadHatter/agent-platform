@@ -2,7 +2,7 @@ from core.storage.postgres import PostgreSQLMetadataStore
 from core.storage.gdrive import GoogleDriveDocumentStore
 from core.storage.qdrant import QdrantVectorStore
 from core.execution.runner import AgentRunner
-from core.llm.litellm_client import LiteLLMProvider
+from core.llm.litellm_client import LiteLLMProvider, LiteLLMEmbeddingProvider
 from core.llm.prompt_registry import PromptRegistry
 from core.config import settings
 from core.execution.registry import agent_registry, AgentMetadata
@@ -19,6 +19,10 @@ def setup_platform():
     document_store = GoogleDriveDocumentStore(settings.google_drive_credentials_path)
     vector_store = QdrantVectorStore()
     llm_provider = LiteLLMProvider(model_name=settings.default_model)
+    embedding_provider = LiteLLMEmbeddingProvider(
+        model_name=settings.embedding_model,
+        timeout=settings.embedding_timeout
+    )
     prompt_registry = PromptRegistry([
         "agents/medical/prompts",
         "agents/coding/prompts",
@@ -31,6 +35,7 @@ def setup_platform():
         document_store=document_store,
         vector_store=vector_store,
         llm_provider=llm_provider,
+        embedding_provider=embedding_provider,
         prompt_registry=prompt_registry
     )
 

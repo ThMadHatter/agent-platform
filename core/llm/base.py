@@ -22,3 +22,8 @@ class LLMProvider(ABC):
     @abstractmethod
     async def embed(self, text: str, **kwargs) -> List[float]:
         pass
+
+class EmbeddingProvider(ABC):
+    @abstractmethod
+    async def embed(self, text: str, **kwargs) -> List[float]:
+        pass

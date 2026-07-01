@@ -63,6 +63,7 @@ class JobAgent(BaseAgent):
         self.cv_knowledge_service = CVKnowledgeService(
             context.vector_store,
             context.llm_provider,
+            context.embedding_provider,
             context.prompt_registry,
             collection_name=settings.qdrant_cv_collection
         )

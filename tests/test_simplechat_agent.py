@@ -37,6 +37,7 @@ async def test_simple_chat_agent_lifecycle(mock_stores, mock_llm):
         document_store=document_store,
         vector_store=vector_store,
         llm_provider=mock_llm,
+        embedding_provider=MagicMock(),
         prompt_registry=MagicMock()
     )
     agent = SimpleChatAgent(context)

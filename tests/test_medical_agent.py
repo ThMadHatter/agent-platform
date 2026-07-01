@@ -9,6 +9,7 @@ def mock_deps():
         "document": MagicMock(),
         "vector": AsyncMock(),
         "llm": AsyncMock(),
+        "embedding": MagicMock(),
         "prompts": MagicMock()
     }
 
@@ -20,6 +21,7 @@ async def test_medical_agent_validation(mock_deps):
         document_store=mock_deps["document"],
         vector_store=mock_deps["vector"],
         llm_provider=mock_deps["llm"],
+        embedding_provider=mock_deps["embedding"],
         prompt_registry=mock_deps["prompts"]
     )
     agent = MedicalAgent(context)
@@ -38,6 +40,7 @@ async def test_medical_agent_plan(mock_deps):
         document_store=mock_deps["document"],
         vector_store=mock_deps["vector"],
         llm_provider=mock_deps["llm"],
+        embedding_provider=mock_deps["embedding"],
         prompt_registry=mock_deps["prompts"]
     )
     agent = MedicalAgent(context)
