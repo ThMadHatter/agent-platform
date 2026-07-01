@@ -17,6 +17,7 @@ The Agent Platform is a domain-agnostic, production-grade AI execution engine. I
 
 ### 3. LLM Layer (`core/llm/`)
 - **LiteLLM Integration**: Unified entry point for all LLM providers (Gemini, OpenAI, Anthropic, etc.).
+- **Embedding Support**: Dedicated embedding providers supporting LiteLLM and local Ollama models.
 - **Complexity-based Router**: Automatically selects the most appropriate model based on task complexity.
 - **Prompt Registry**: Jinja2-based template management for structured prompts.
 
@@ -29,6 +30,26 @@ The Agent Platform is a domain-agnostic, production-grade AI execution engine. I
 - **Shared Base**: Defines the contract for all agents (`BaseAgent`).
 - **Domain Agents**: Specialized agents (Medical, Job, Coding) that orchestrate internal services.
 - **Internal Services**: Reusable business logic components within a domain.
+
+## Configuration
+
+### Environment Variables
+The platform is configured via environment variables (or a `.env` file):
+
+#### LLM & Embeddings
+- `LITELLM_BASE_URL`: Base URL for LiteLLM proxy (default: `http://localhost:4000`).
+- `LITELLM_API_KEY`: API key for LiteLLM.
+- `DEFAULT_MODEL`: Default chat model (default: `basic-profile`).
+- `EMBEDDING_PROVIDER`: Provider for embeddings (default: `litellm`).
+- `EMBEDDING_MODEL`: Model to use for embeddings (default: `ollama/bge-m3:latest`).
+- `EMBEDDING_DIMENSION`: Dimension of the embedding vectors (default: `1024`).
+- `EMBEDDING_TIMEOUT`: Timeout for embedding requests in seconds (default: `60`).
+
+#### Qdrant
+- `QDRANT_URL`: URL for Qdrant service (default: `http://localhost:6333`).
+- `QDRANT_API_KEY`: API key for Qdrant (optional).
+- `QDRANT_CV_COLLECTION`: Collection name for CV knowledge (default: `work_collection`).
+- `QDRANT_DISTANCE`: Distance metric for Qdrant (default: `cosine`).
 
 ## Execution Lifecycle
 1. **Request**: n8n calls POST `/execute`.

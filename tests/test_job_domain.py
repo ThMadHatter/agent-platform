@@ -24,6 +24,7 @@ async def test_job_agent_workflow_selection():
     document_store = MagicMock()
     vector_store = MagicMock()
     llm_provider = MagicMock()
+    embedding_provider = MagicMock()
     prompt_registry = MagicMock()
 
     context_obj = ServiceContext(
@@ -31,6 +32,7 @@ async def test_job_agent_workflow_selection():
         document_store=document_store,
         vector_store=vector_store,
         llm_provider=llm_provider,
+        embedding_provider=embedding_provider,
         prompt_registry=prompt_registry
     )
 

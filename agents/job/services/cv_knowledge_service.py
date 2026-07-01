@@ -1,7 +1,7 @@
 import logging
 from typing import Dict, Any, List, Optional
 from core.storage.base import VectorStore
-from core.llm.base import LLMProvider
+from core.llm.base import LLMProvider, EmbeddingProvider
 from core.llm.prompt_registry import PromptRegistry
 
 logger = logging.getLogger(__name__)
@@ -11,11 +11,13 @@ class CVKnowledgeService:
         self,
         vector_store: VectorStore,
         llm_provider: LLMProvider,
+        embedding_provider: EmbeddingProvider,
         prompt_registry: PromptRegistry,
         collection_name: str = "cv_knowledge"
     ):
         self.vector_store = vector_store
         self.llm_provider = llm_provider
+        self.embedding_provider = embedding_provider
         self.prompt_registry = prompt_registry
         self.collection_name = collection_name
 
@@ -75,7 +77,7 @@ class CVKnowledgeService:
         if points:
             # Add embeddings to points
             for point in points:
-                point["vector"] = await self.llm_provider.embed(point["content"])
+                point["vector"] = await self.embedding_provider.embed(point["content"])
             await self.vector_store.upsert(self.collection_name, points)
 
         return items
@@ -88,7 +90,7 @@ class CVKnowledgeService:
         filter_type: Optional[str] = None
     ) -> List[Dict[str, Any]]:
         # 1. Generate embedding for the query
-        vector = await self.llm_provider.embed(query)
+        vector = await self.embedding_provider.embed(query)
 
         # 2. Search in Qdrant
         results = await self.vector_store.search(

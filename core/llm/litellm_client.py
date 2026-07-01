@@ -3,7 +3,7 @@ import litellm
 import yaml
 import os
 from typing import Any, Dict, List, Optional, Union
-from core.llm.base import LLMProvider, LLMResponse
+from core.llm.base import LLMProvider, LLMResponse, EmbeddingProvider
 from core.config import settings
 
 # Configure LiteLLM
@@ -93,9 +93,39 @@ class LiteLLMProvider(LLMProvider):
         Generates an embedding for the given text.
         """
         try:
+            model = self.model_name
+            if "/" not in model:
+                model = f"openai/{model}"
+
             response = await litellm.aembedding(
-                model=f"openai/{self.model_name}", # Assumes model supports embedding or maps correctly
+                model=model,
                 input=[text],
+                **kwargs
+            )
+            return response.data[0]["embedding"]
+        except Exception as e:
+            logger.error(f"LiteLLM embedding error: {e}")
+            raise
+
+class LiteLLMEmbeddingProvider(EmbeddingProvider):
+    """
+    A dedicated embedding provider using LiteLLM.
+    """
+    def __init__(self, model_name: Optional[str] = None, timeout: int = 60):
+        self.model_name = model_name or settings.embedding_model
+        self.timeout = timeout
+
+    async def embed(self, text: str, **kwargs) -> List[float]:
+        try:
+            model = self.model_name
+            # If no provider prefix, default to openai/ (for LiteLLM proxy compatibility)
+            if "/" not in model:
+                model = f"openai/{model}"
+
+            response = await litellm.aembedding(
+                model=model,
+                input=[text],
+                timeout=self.timeout,
                 **kwargs
             )
             return response.data[0]["embedding"]
