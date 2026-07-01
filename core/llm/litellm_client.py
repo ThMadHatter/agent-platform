@@ -20,10 +20,10 @@ logger = logging.getLogger(__name__)
 class LiteLLMProvider(LLMProvider):
     """
     A unified LLM provider using LiteLLM.
-    Supports any model string compatible with LiteLLM (e.g., 'openai/gpt-4o', 'gemini/gemini-1.5-pro').
+    Uses model aliases resolved by the LiteLLM proxy.
     """
     def __init__(self, model_name: Optional[str] = None):
-        self.model_name = model_name or settings.default_model
+        self.model_name = model_name or settings.default_chat_model
         if self.model_name not in settings.allowed_models:
             raise ValueError(f"Invalid model: {self.model_name}. Must use profile alias from {settings.allowed_models}.")
 
@@ -35,7 +35,7 @@ class LiteLLMProvider(LLMProvider):
 
         try:
             response = await litellm.acompletion(
-                model=f"openai/{self.model_name}",
+                model=self.model_name,
                 messages=messages,
                 **kwargs
             )
@@ -62,7 +62,7 @@ class LiteLLMProvider(LLMProvider):
         try:
             # Attempt to use response_format if supported
             response = await litellm.acompletion(
-                model=f"openai/{self.model_name}",
+                model=self.model_name,
                 messages=[
                     {"role": "system", "content": system_prompt or "You are a helpful assistant."},
                     {"role": "user", "content": prompt}
@@ -93,12 +93,8 @@ class LiteLLMProvider(LLMProvider):
         Generates an embedding for the given text.
         """
         try:
-            model = self.model_name
-            if "/" not in model:
-                model = f"openai/{model}"
-
             response = await litellm.aembedding(
-                model=model,
+                model=self.model_name,
                 input=[text],
                 **kwargs
             )
@@ -110,22 +106,16 @@ class LiteLLMProvider(LLMProvider):
 class LiteLLMEmbeddingProvider(EmbeddingProvider):
     """
     A dedicated embedding provider using LiteLLM.
+    Uses model aliases resolved by the LiteLLM proxy.
     """
-    def __init__(self, model_name: Optional[str] = None, timeout: int = 60):
-        self.model_name = model_name or settings.embedding_model
-        self.timeout = timeout
+    def __init__(self, model_name: Optional[str] = None):
+        self.model_name = model_name or settings.default_embedding_model
 
     async def embed(self, text: str, **kwargs) -> List[float]:
         try:
-            model = self.model_name
-            # If no provider prefix, default to openai/ (for LiteLLM proxy compatibility)
-            if "/" not in model:
-                model = f"openai/{model}"
-
             response = await litellm.aembedding(
-                model=model,
+                model=self.model_name,
                 input=[text],
-                timeout=self.timeout,
                 **kwargs
             )
             return response.data[0]["embedding"]
@@ -162,7 +152,7 @@ class LiteLLMRouter:
     def _load_defaults(self):
         # Derive defaults from settings.allowed_models if available
         models = settings.allowed_models
-        basic = models[0] if len(models) > 0 else settings.default_model
+        basic = models[0] if len(models) > 0 else settings.default_chat_model
         heavy = models[1] if len(models) > 1 else basic
 
         self.model_map = {"basic": basic, "heavy": heavy}
@@ -177,12 +167,12 @@ class LiteLLMRouter:
         if not isinstance(model_key, str):
              model_key = str(model_key)
 
-        model_name = self.model_map.get(model_key, settings.default_model)
+        model_name = self.model_map.get(model_key, settings.default_chat_model)
 
         # Final safeguard: if model_name is not allowed, force default
         if model_name not in settings.allowed_models:
             logger.warning(f"Router resolved to invalid model '{model_name}'. Falling back to default.")
-            return settings.default_model
+            return settings.default_chat_model
 
         return model_name
 

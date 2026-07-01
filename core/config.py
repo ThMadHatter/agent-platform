@@ -15,14 +15,12 @@ class Settings(BaseSettings):
     # LiteLLM / LLM Gateway
     litellm_base_url: Optional[str] = None
     litellm_api_key: Optional[str] = None
-    default_model: str = "basic-profile"
-    allowed_models: list[str] = ["basic-profile", "heavy-profile"]
+    default_chat_model: str = "basic-profile"
+    default_embedding_model: str = "embedding-default"
+    allowed_models: list[str] = ["basic-profile", "heavy-profile", "embedding-default"]
 
     # Embeddings
-    embedding_provider: str = "litellm"
-    embedding_model: str = "ollama/bge-m3:latest"
     embedding_dimension: int = 1024
-    embedding_timeout: int = 60
 
     # Agent Platform Auth
     agent_platform_api_key: str = "your-secret-key"

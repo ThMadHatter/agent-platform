@@ -7,7 +7,7 @@ def test_litellm_provider_init():
 
 def test_litellm_provider_invalid_init():
     with pytest.raises(ValueError, match="Invalid model"):
-        LiteLLMProvider(model_name="openai/gpt-4o")
+        LiteLLMProvider(model_name="invalid-alias")
 
 def test_litellm_provider_default():
     provider = LiteLLMProvider()

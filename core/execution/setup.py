@@ -18,10 +18,9 @@ def setup_platform():
     metadata_store = PostgreSQLMetadataStore()
     document_store = GoogleDriveDocumentStore(settings.google_drive_credentials_path)
     vector_store = QdrantVectorStore()
-    llm_provider = LiteLLMProvider(model_name=settings.default_model)
+    llm_provider = LiteLLMProvider(model_name=settings.default_chat_model)
     embedding_provider = LiteLLMEmbeddingProvider(
-        model_name=settings.embedding_model,
-        timeout=settings.embedding_timeout
+        model_name=settings.default_embedding_model
     )
     prompt_registry = PromptRegistry([
         "agents/medical/prompts",

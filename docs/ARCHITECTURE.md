@@ -39,11 +39,9 @@ The platform is configured via environment variables (or a `.env` file):
 #### LLM & Embeddings
 - `LITELLM_BASE_URL`: Base URL for LiteLLM proxy (default: `http://localhost:4000`).
 - `LITELLM_API_KEY`: API key for LiteLLM.
-- `DEFAULT_MODEL`: Default chat model (default: `basic-profile`).
-- `EMBEDDING_PROVIDER`: Provider for embeddings (default: `litellm`).
-- `EMBEDDING_MODEL`: Model to use for embeddings (default: `ollama/bge-m3:latest`).
+- `DEFAULT_CHAT_MODEL_ALIAS`: Alias for the default chat model resolved by LiteLLM (default: `basic-profile`).
+- `DEFAULT_EMBEDDING_MODEL_ALIAS`: Alias for the default embedding model resolved by LiteLLM (default: `embedding-default`).
 - `EMBEDDING_DIMENSION`: Dimension of the embedding vectors (default: `1024`).
-- `EMBEDDING_TIMEOUT`: Timeout for embedding requests in seconds (default: `60`).
 
 #### Qdrant
 - `QDRANT_URL`: URL for Qdrant service (default: `http://localhost:6333`).
